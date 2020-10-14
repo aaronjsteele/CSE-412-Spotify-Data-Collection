@@ -1,0 +1,9 @@
+/.vscode
+/albums.json
+/artists.json
+/config.py
+/sql_artists.txt
+/sql_genre.txt
+/sql_is_genre.txt
+/tracks.json
+/__pycache__
