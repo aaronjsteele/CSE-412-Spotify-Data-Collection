@@ -76,7 +76,7 @@ cursor=connection.cursor()
 # Now we have an access token for access
 BASE_URL = 'https://api.spotify.com/v1/'
 
-artist_id_list = ['36QJpDe2go2KgaRleHCDTp','2CIMQHirSU0MQqyYHq0eOx','57dN52uHvrHOxijzpIgu3E','1vCWHaC5f2uS3yhpwWbIA6','2ye2Wgw4gimLv2eAKyk1NB','1Xyo4u8uXC1ZmMpatF05PJ','66CXWjxzNUsdJxJ2JdwvnR','1dfeR4HaWDbWqFHLkxsg1d','04gDigrS5kc9YWfZHwBETP']
+artist_id_list = ['36QJpDe2go2KgaRleHCDTp']
 
 artists_to_insert = []
 genres_to_insert = set()
