@@ -54,4 +54,12 @@ def execute_query(query):
 	results = cursor.fetchall()
 	keys = [column.name for column in cursor.description]
 	connection.close()
-	return [{key: data for key, data in zip(keys, row)} for row in results]
+	return [DotDict({key: data for key, data in zip(keys, row)}) for row in results]
+
+class DotDict(dict):
+	def __getattr__(self, key):
+		if key not in self:
+			print(f"There was an error while trying to access '{key}' from {self}")
+			return "Database Error"
+		else:
+			return self[key]

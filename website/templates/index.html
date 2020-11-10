@@ -13,8 +13,7 @@
 <ul class="list-group">
   {% for song in songs %}
   <li class="list-group-item">
-    <b>{{song.get("title", "i fucked up")}}</b> by <i><a href="/songs-by-artist?artist={{song.get('artist', '404')}}">{{song.get("artist", "database
-    failure")}}</a></i>
+    <b>{{song.title}}</b> by <i><a href="/songs-by-artist?artist={{song.artist}}">{{song.artist}}</a></i>
   </li>
   {% endfor %}
 </ul>
