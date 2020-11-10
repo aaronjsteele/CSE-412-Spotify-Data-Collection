@@ -11,3 +11,5 @@ to_remove.txt
 ..bfg-report/2020-10-14/12-54-25/cache-stats.txt
 ..bfg-report/2020-10-14/12-54-25/changed-files.txt
 ..bfg-report/2020-10-14/12-54-25/object-id-map.old-new.txt
+website/config.py
+\__pycache__

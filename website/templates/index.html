@@ -1,0 +1,21 @@
+{% extends "base.html" %} {% block content %}
+<h1>hello</h1>
+<form method="POST" action="/">
+  <input name="firstname" placeholder="Enter first name" />
+  <button type="submit">Submit</button>
+</form>
+<ul>
+  {% for item in a %}
+  <li>{{item}}</li>
+  {% endfor %}
+</ul>
+{% if songs %}
+<ul class="list-group">
+  {% for song in songs %}
+  <li class="list-group-item">
+    <b>{{song.get("title", "i fucked up")}}</b> by <i>{{song.get("artist", "database
+    failure")}}</i>
+  </li>
+  {% endfor %}
+</ul>
+{% endif %} {% endblock %}
