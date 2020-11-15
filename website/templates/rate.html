@@ -1,0 +1,9 @@
+{% extends "base.html" %} {% block content %}
+<h1>Rate: {{song.title}}</h1>
+<form method="POST" action="/rate/{{song.id}}">
+  <input name="user_id" placeholder="Enter user-id"/>
+  <input name="comment" placeholder="Comments"/>
+  <input name="rating" type="number" min=1 max=5 step=1 placeholder=5 />
+  <button type="submit">Submit</button>
+</form>
+{% endblock %}

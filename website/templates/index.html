@@ -13,7 +13,7 @@
 <ul class="list-group">
   {% for song in songs %}
   <li class="list-group-item">
-    <b>{{song.title}}</b> by <i><a href="/songs-by-artist?artist={{song.artist}}">{{song.artist}}</a></i>
+    <b>"{{song.title}}</b> by <i><a href="/songs-by-artist?artist={{song.artist}}">{{song.artist}}</a></i> ({{'%0.2f'|format(song.rating)}} <a href="/rate?song={{song.id}}">Rate it</a>)
   </li>
   {% endfor %}
 </ul>
