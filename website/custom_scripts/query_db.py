@@ -27,24 +27,24 @@ query = f"SELECT song_name as title, artist_name as artist FROM song, performed_
                 f"WHERE song.song_id = performed_by.song_id "\
                 f"AND performed_by.artist_id = artist.artist_id"
 
-def search_by_artist(cursor, input_str):
+def simple_search(cursor, input_str, query_type):
     """
     An example function to perform a query where we are searching by artist.
     Note that the cursor and search term is passed in.
 
+    Queries get results by similar artist, album, or song title.
+
     NOTE: Due to psycopg2 syntax, wrap strings in the format_like_query
     function when calling an ILIKE query.
     """
-    query = cursor.mogrify(
-        """
-        SELECT song_name AS title, artist_name AS artist
-        FROM song, performed_by, artist
-        WHERE song.song_id = performed_by.song_id
-            AND performed_by.artist_id = artist.artist_id
-            AND artist_name ILIKE %s
-        """,
-        (format_like_query(input_str),)
+    base_query = (
+        f"SELECT song_name AS title, artist_name AS artist "\
+        f"FROM song, performed_by, artist "\
+        f"WHERE song.song_id = performed_by.song_id "\
+        f"  AND performed_by.artist_id = artist.artist_id "\
+        f"  AND {query_type}_name ILIKE %s"
     )
+    query = cursor.mogrify(base_query, (format_like_query(input_str),))
     print(query)
     cursor.execute(query)
     results = cursor.fetchall()

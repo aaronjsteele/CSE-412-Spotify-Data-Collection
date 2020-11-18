@@ -13,7 +13,7 @@ def main():
         search_string = request.form['inputString']
         query_type = request.form['inputQuery']
 
-        return render_template("index.html", songs=query_db.search_by_artist(get_db().cursor(), search_string))
+        return render_template("index.html", songs=query_db.simple_search(get_db().cursor(), search_string, query_type))
         #return "{first_name}, bye".format(first_name=request.form.get("firstname", "???"))
     else:
         return "oh no", 405
@@ -41,25 +41,6 @@ def songs_by_artist():
 
 def error_page():
 	return "" # should be a template or something
-
-"""
-def execute_query(query):
-	import website.config as config
-	import psycopg2
-	connection = psycopg2.connect(
-		host = config.host,
-		port = config.port,
-		user = config.user,
-		password = config.password,
-		database = config.database
-	)
-	cursor = connection.cursor()
-	cursor.execute(query)
-	results = cursor.fetchall()
-	keys = [column.name for column in cursor.description]
-	connection.close()
-	return [DotDict({key: data for key, data in zip(keys, row)}) for row in results]
-"""
 
 class DotDict(dict):
 	def __getattr__(self, key):
