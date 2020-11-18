@@ -80,6 +80,8 @@ def get_db():
 
 @app.teardown_appcontext
 def close_db(input):
-	#Closes the database again at the end of the request.
+	"""
+	Closes the database again at the end of the request.
+	"""
 	if hasattr(g, 'postgres_db'):
 		g.postgres_db.close()

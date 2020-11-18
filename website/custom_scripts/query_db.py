@@ -32,8 +32,8 @@ def search_by_artist(cursor, input_str):
     An example function to perform a query where we are searching by artist.
     Note that the cursor and search term is passed in.
 
-    NOTE: Due to psycopg2 syntax, a '%' symbol in the LIKE clause
-    must be escaped with a '%'.
+    NOTE: Due to psycopg2 syntax, wrap strings in the format_like_query
+    function when calling an ILIKE query.
     """
     query = cursor.mogrify(
         """
