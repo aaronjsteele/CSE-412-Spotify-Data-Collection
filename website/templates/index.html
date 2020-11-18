@@ -1,14 +1,30 @@
 {% extends "base.html" %} {% block content %}
 <h1>hello</h1>
+
 <form method="POST" action="/">
-  <input name="firstname" placeholder="Enter first name" />
-  <button type="submit">Submit</button>
+  <div class="form-row">
+    <div class="form-group col-md-8">
+      <input type="text" class="form-control" id="inputStringField" name="inputString" placeholder="deadmau5">
+    </div>
+    <div class="form-group col-md-2">
+      <select id="inputQueryDropdown" name="inputQuery" class="form-control">
+        <option>Artist</option>
+        <option>Song</option>
+        <option>Album</option>
+      </select>
+    </div>
+    <div class="col-auto">
+      <button type="submit" class="btn btn-primary mb-2">Submit</button>
+    </div>
+  </div>
 </form>
+
 <ul>
   {% for item in a %}
   <li>{{item}}</li>
   {% endfor %}
 </ul>
+
 {% if songs %}
 <ul class="list-group">
   {% for song in songs %}
