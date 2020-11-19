@@ -7,14 +7,17 @@ from website.custom_scripts import *
 @app.route("/", methods=["GET", "POST"])
 def main():
     if request.method == "GET":
-        return render_template("index.html", a=[1, 2, 3])
+        return render_template("index.html")
     elif request.method == "POST":
         # logic for querying database and return data
         search_string = request.form['inputString']
         query_type = request.form['inputQuery']
-
-        return render_template("index.html", songs=query_db.search_by_artist(get_db().cursor(), search_string))
-        #return "{first_name}, bye".format(first_name=request.form.get("firstname", "???"))
+        if query_type == "Artist":
+            return render_template("index.html", songs=query_db.search_by_artist(get_db().cursor(), search_string))
+        elif query_type == "Song":
+            return render_template("index.html", songs=query_db.search_by_song(get_db().cursor(), search_string))
+        elif query_type == "Album":
+            return render_template("index.html", songs=query_db.search_by_album(get_db().cursor(), search_string))
     else:
         return "oh no", 405
 
