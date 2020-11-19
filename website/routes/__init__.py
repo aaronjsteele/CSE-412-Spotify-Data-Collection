@@ -12,12 +12,11 @@ def main():
         # logic for querying database and return data
         search_string = request.form['inputString']
         query_type = request.form['inputQuery']
-        if query_type == "Artist":
-            return render_template("index.html", songs=query_db.search_by_artist(get_db().cursor(), search_string))
-        elif query_type == "Song":
-            return render_template("index.html", songs=query_db.search_by_song(get_db().cursor(), search_string))
-        elif query_type == "Album":
-            return render_template("index.html", songs=query_db.search_by_album(get_db().cursor(), search_string))
+        sort_by_type = request.form['sortby']
+        if search_string == "":
+            return render_template("index.html", songs=query_db.list_all(get_db().cursor(), sort_by_type))
+        else:
+            return render_template("index.html", songs=query_db.search_by(get_db().cursor(), search_string, query_type, sort_by_type))
     else:
         return "oh no", 405
 
