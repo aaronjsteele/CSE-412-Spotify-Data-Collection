@@ -44,25 +44,6 @@ def songs_by_artist():
 def error_page():
 	return "" # should be a template or something
 
-"""
-def execute_query(query):
-	import website.config as config
-	import psycopg2
-	connection = psycopg2.connect(
-		host = config.host,
-		port = config.port,
-		user = config.user,
-		password = config.password,
-		database = config.database
-	)
-	cursor = connection.cursor()
-	cursor.execute(query)
-	results = cursor.fetchall()
-	keys = [column.name for column in cursor.description]
-	connection.close()
-	return [DotDict({key: data for key, data in zip(keys, row)}) for row in results]
-"""
-
 class DotDict(dict):
 	def __getattr__(self, key):
 		if key not in self:
@@ -82,6 +63,8 @@ def get_db():
 
 @app.teardown_appcontext
 def close_db(input):
-	#Closes the database again at the end of the request.
+	"""
+	Closes the database again at the end of the request.
+	"""
 	if hasattr(g, 'postgres_db'):
 		g.postgres_db.close()
