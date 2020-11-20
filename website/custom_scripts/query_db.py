@@ -15,57 +15,34 @@ def init_db_connection():
         database = config.database
     )
     return connection
-    """
-    cursor.execute(query)
-    results = cursor.fetchall()
-    keys = [column.name for column in cursor.description]
-    connection.close()
-    return [DotDict({key: data for key, data in zip(keys, row)}) for row in results]
-    """
-#is this doing anything here? Can we delete?
-query = f"SELECT song_name AS title, artist_name AS artist, album_name AS album FROM song, performed_by, artist "\
-        f"WHERE song.song_id = performed_by.song_id "\
-        f"AND performed_by.artist_id = artist.artist_id"
-'''
-def search_by_artist(cursor, input_str, query_type):
-    """
-    An example function to perform a query where we are searching by artist.
-    Note that the cursor and search term is passed in.
 
-    Queries get results by similar artist, album, or song title.
-
-    NOTE: Due to psycopg2 syntax, wrap strings in the format_like_query
-    function when calling an ILIKE query.
-    """
-    query = cursor.mogrify(
-        """
-        SELECT song_name AS title, artist_name AS artist, album_name AS album
-        FROM song, performed_by, artist, album, is_in
-        WHERE song.song_id = performed_by.song_id
-            AND performed_by.artist_id = artist.artist_id
-            AND song.song_id = is_in.song_id
-            AND is_in.album_id = album.album_id
-            AND artist_name ILIKE %s
-        """,
-        (format_like_query(input_str),)
-    )
-    query = cursor.mogrify(base_query, (format_like_query(input_str),))
-    print(query)
-    cursor.execute(query)
-    results = cursor.fetchall()
-    keys = [column.name for column in cursor.description]
-    return [DotDict({key: data for key, data in zip(keys, row)}) for row in results]
-'''
 def list_all(cursor, sort_by_type):
     # function that list all the songs when the search bar is empty
     sort_by_str = sort_by_parser(sort_by_type)
-    query = f"SELECT song_name AS title, artist_name AS artist "\
-            f"FROM song, artist, album, performed_by, is_in "\
-            f"WHERE song.song_id = performed_by.song_id "\
-            f"AND performed_by.artist_id = artist.artist_id "\
-            f"AND song.song_id = is_in.song_id "\
-            f"AND is_in.album_id = album.album_id "\
-            f"ORDER BY {sort_by_str}"
+    unprocessed_query = (
+        f"SELECT song_name AS title, artist_name AS artist, album_name AS album, avg_table.avg_rating AS average, count_table.total AS num_listens "\
+        f"FROM song, artist, performed_by, album, is_in, "\
+        f"    ( "\
+        f"        SELECT song.song_id, ROUND(AVG(rates.rating_value),2) AS avg_rating "\
+        f"        FROM song, rates "\
+        f"        WHERE song.song_id = rates.song_id "\
+        f"        GROUP BY song.song_id "\
+        f"    ) AS avg_table, "\
+        f"    ( "\
+        f"        SELECT song.song_id, COUNT(*) AS total "\
+        f"        FROM song, listens_to "\
+        f"        WHERE song.song_id = listens_to.song_id "\
+        f"        GROUP BY song.song_id "\
+        f"    ) AS count_table "\
+        f"WHERE song.song_id = performed_by.song_id  "\
+        f"    AND performed_by.artist_id = artist.artist_id  "\
+        f"    AND song.song_id = is_in.song_id  "\
+        f"    AND is_in.album_id = album.album_id  "\
+        f"    AND avg_table.song_id = song.song_id "\
+        f"    AND count_table.song_id = song.song_id "\
+        f"ORDER BY {sort_by_str}"
+    )
+    query = cursor.mogrify(unprocessed_query)
     cursor.execute(query)
     results = cursor.fetchall()
     keys = [column.name for column in cursor.description]
@@ -74,16 +51,49 @@ def list_all(cursor, sort_by_type):
 def search_by(cursor, input_str, query_type, sort_by_type): 
     # function that performs a query based on the query type
     sort_by_str = sort_by_parser(sort_by_type)
-    query = f"SELECT song_name AS title, artist_name AS artist "\
+    unprocessed_query = (
+        f"SELECT song_name AS title, artist_name AS artist, album_name AS album, avg_table.avg_rating AS average, count_table.total AS num_listens "\
+        f"FROM song, artist, performed_by, album, is_in, "\
+        f"    ( "\
+        f"        SELECT song.song_id, ROUND(AVG(rates.rating_value),2) AS avg_rating "\
+        f"        FROM song, rates "\
+        f"        WHERE song.song_id = rates.song_id "\
+        f"        GROUP BY song.song_id "\
+        f"    ) AS avg_table, "\
+        f"    ( "\
+        f"        SELECT song.song_id, COUNT(*) AS total "\
+        f"        FROM song, listens_to "\
+        f"        WHERE song.song_id = listens_to.song_id "\
+        f"        GROUP BY song.song_id "\
+        f"    ) AS count_table "\
+        f"WHERE song.song_id = performed_by.song_id  "\
+        f"    AND performed_by.artist_id = artist.artist_id  "\
+        f"    AND song.song_id = is_in.song_id  "\
+        f"    AND is_in.album_id = album.album_id  "\
+        f"    AND avg_table.song_id = song.song_id "\
+        f"    AND count_table.song_id = song.song_id "\
+        f"    AND {query_type}.{query_type}_name ILIKE %s "\
+        f"ORDER BY {sort_by_str}"
+    )
+    """
+    unprocessed_query = (
+            f"SELECT song_name AS title, artist_name AS artist, album_name AS album, AVG()"\
             f"FROM song, artist, performed_by, album, is_in "\
             f"WHERE song.song_id = performed_by.song_id "\
             f"AND performed_by.artist_id = artist.artist_id "\
             f"AND song.song_id = is_in.song_id "\
             f"AND is_in.album_id = album.album_id "\
-            f"AND {query_type}_name = '{input_str}' "\
-            f"ORDER BY {sort_by_str}"
+            f"AND rates.song_id = song.song_id "\
+            f"AND {query_type}_name ILIKE %s "\
+            f"ORDER BY {sort_by_str} "\
+            f"GROUP BY song.song_id"
+    )
+    """
+    query = cursor.mogrify(unprocessed_query, (format_like_query(input_str),))
+    #print(query)
     cursor.execute(query)
-    results = cursor.fetchall()
+    results = cursor.fetchmany(1000)
+    #print(results)
     keys = [column.name for column in cursor.description]
     return [DotDict({key: data for key, data in zip(keys, row)}) for row in results]
 

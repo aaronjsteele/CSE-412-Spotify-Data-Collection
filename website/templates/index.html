@@ -4,7 +4,7 @@
 <form method="POST" action="/">
   <div class="form-row">
     <div class="form-group col-md-8">
-      <input type="text" class="form-control" id="inputStringField" name="inputString">
+      <input type="text" class="form-control" id="inputStringField" name="inputString" value={{prev[0]}}>
     </div>
     <div class="form-group col-md-2">
       <select id="inputQueryDropdown" name="inputQuery" class="form-control">
@@ -45,11 +45,23 @@
 </ul>
 
 {% if songs %}
-<ul class="list-group">
+<div class="container">
+  <ul class="list-group">
   {% for song in songs %}
-  <li class="list-group-item">
-    <b>{{song.title}}</b> by <i><a href="/songs-by-artist?artist={{song.artist}}">{{song.artist}}</a></i>
-  </li>
+    <li class="list-group-item">
+      <div class="row">
+        <div class="col-8">
+          <b>{{song.title}}</b> by <i><a href="/songs-by-artist?artist={{song.artist}}">{{song.artist}}</a></i> in <b>{{song.album}}</b>
+        </div>
+        <div class="col-2">
+          Rating: {{song.average}}
+        </div>
+        <div class="col-2">
+          Listens: {{song.num_listens}}
+        </div>
+      </div>
+    </li>
   {% endfor %}
-</ul>
+  </ul>
+</div>
 {% endif %} {% endblock %}
