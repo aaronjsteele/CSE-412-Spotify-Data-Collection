@@ -75,20 +75,6 @@ def search_by(cursor, input_str, query_type, sort_by_type):
         f"    AND {query_type}.{query_type}_name ILIKE %s "\
         f"ORDER BY {sort_by_str}"
     )
-    """
-    unprocessed_query = (
-            f"SELECT song_name AS title, artist_name AS artist, album_name AS album, AVG()"\
-            f"FROM song, artist, performed_by, album, is_in "\
-            f"WHERE song.song_id = performed_by.song_id "\
-            f"AND performed_by.artist_id = artist.artist_id "\
-            f"AND song.song_id = is_in.song_id "\
-            f"AND is_in.album_id = album.album_id "\
-            f"AND rates.song_id = song.song_id "\
-            f"AND {query_type}_name ILIKE %s "\
-            f"ORDER BY {sort_by_str} "\
-            f"GROUP BY song.song_id"
-    )
-    """
     query = cursor.mogrify(unprocessed_query, (format_like_query(input_str),))
     #print(query)
     cursor.execute(query)
