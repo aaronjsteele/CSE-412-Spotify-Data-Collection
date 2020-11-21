@@ -22,7 +22,7 @@ def main():
 @app.route("/songs-by-artist", methods=["GET"])
 def songs_by_artist():
     if request.method != "GET":
-        print(f"/songs-by-artist received a {request.method} request when it should have recieved a 'GET' request.")
+        print(f"/songs-by-artist received a {request.method} request when it should have received a 'GET' request.")
         return error_page()
     artist = request.args.get("artist", "")
 
@@ -39,6 +39,23 @@ def songs_by_artist():
             f"AND artist_name='{artist}'"
 
     return render_template("index.html", songs=execute_query(query))
+
+@app.route("/selected-song", methods=["GET"])
+def song_page():
+    # Will need to implement method for POST (for submitting ratings/comments)
+    if request.method != "GET":
+        print(f"/selected-song received a {request.method} request when it should have received a 'GET' request.")
+        return error_page()
+    song_id = request.args.get("song_id", "")
+
+    if not song_id:
+        print(f"/selected-song needs to receive an 'song-id' parameter. How did you get here?")
+        return error_page()
+
+    # Will want to put query here that gets all comments
+
+    # For template, want to pass in array of all comments (from query results)
+    # return render_template()
 
 def error_page():
     return "" # should be a template or something
