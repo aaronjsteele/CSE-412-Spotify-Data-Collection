@@ -20,16 +20,33 @@ def main_page():
         else:
             return render_template("index.html", prev=prev_query, songs=query_db.search_by(get_db().cursor(), search_string, query_type, sort_by_type))
 
-@app.route("/songs-by-artist", methods=["GET"])
-def songs_by_artist_page():
+@app.route("/artist", methods=["GET"])
+def artist_page():
     if request.method != "GET":
-        print(f"/songs-by-artist received a {request.method} request when it should have recieved a 'GET' request.")
+        print(f"/songs-by-artist received a {request.method} request when it should have received a 'GET' request.")
         return error_page()
     artist = request.args.get("artist", "")
     if not artist:
         print(f"/songs-by-artist needs to receive an 'artist' parameter (eg. /songs-by-artist?artist=bob)")
         return error_page()
     return render_template("index.html", prev=["", " ", " "], songs=query_db.songs_by_artist(get_db().cursor(), artist))
+
+@app.route("/selected-song", methods=["GET"])
+def song_page():
+    # Will need to implement method for POST (for submitting ratings/comments)
+    if request.method != "GET":
+        print(f"/selected-song received a {request.method} request when it should have received a 'GET' request.")
+        return error_page()
+    song_id = request.args.get("song_id", "")
+
+    if not song_id:
+        print(f"/selected-song needs to receive an 'song-id' parameter. How did you get here?")
+        return error_page()
+
+    # Will want to put query here that gets all comments
+
+    # For template, want to pass in array of all comments (from query results)
+    return render_template("songpage.html")
 
 @app.route("/rate", methods=["GET"])
 def rate_song_page():
