@@ -55,7 +55,7 @@ def song_page():
     # Will want to put query here that gets all comments
 
     # For template, want to pass in array of all comments (from query results)
-    # return render_template()
+    return render_template("songpage.html")
 
 def error_page():
     return "" # should be a template or something
