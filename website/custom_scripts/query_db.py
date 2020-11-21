@@ -43,10 +43,7 @@ def list_all(cursor, sort_by_type):
         f"ORDER BY {sort_by_str}"
     )
     query = cursor.mogrify(unprocessed_query)
-    cursor.execute(query)
-    results = cursor.fetchall()
-    keys = [column.name for column in cursor.description]
-    return [DotDict({key: data for key, data in zip(keys, row)}) for row in results]
+    return execute_query_and_return(cursor, query)
 
 def search_by(cursor, input_str, query_type, sort_by_type): 
     # function that performs a query based on the query type
@@ -76,10 +73,39 @@ def search_by(cursor, input_str, query_type, sort_by_type):
         f"ORDER BY {sort_by_str}"
     )
     query = cursor.mogrify(unprocessed_query, (format_like_query(input_str),))
-    #print(query)
+    return execute_query_and_return(cursor, query)
+
+def songs_by_artist(cursor, artist):
+    unprocessed_query = (
+        f"SELECT song_name as title, artist_name as artist FROM song, performed_by, artist "\
+        f"WHERE song.song_id = performed_by.song_id "\
+        f"AND performed_by.artist_id = artist.artist_id "\
+        f"AND artist_name='{artist}'"
+    )
+    query = cursor.mogrify(unprocessed_query)
+    return execute_query_and_return(cursor, query)
+
+def rate_song_page(cursor, song):
+    unprocessed_query = (
+        f"SELECT song_id as id, song_name as title "\
+        f"FROM song "\
+        f"WHERE song_id='{song}'"
+    )
+    query = cursor.mogrify(unprocessed_query)
+    return execute_query_and_return(cursor, query)
+
+def rate(cursor, user_id, song_id, rating_value, comment):
+    unprocessed_query = (
+        f"INSERT INTO rates (user_id, song_id, rating_value, comment) "\
+        f"VALUES ('{user_id}', '{song_id}', '{rating_value}', '{comment}') "\
+        f"ON CONFLICT DO NOTHING"
+    )
+    query = cursor.mogrify(unprocessed_query)
     cursor.execute(query)
-    results = cursor.fetchmany(1000)
-    #print(results)
+
+def execute_query_and_return(cursor, query):
+    cursor.execute(query)
+    results = cursor.fetchall()
     keys = [column.name for column in cursor.description]
     return [DotDict({key: data for key, data in zip(keys, row)}) for row in results]
 
