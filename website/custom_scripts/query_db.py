@@ -98,6 +98,9 @@ def sort_by_parser(sort_by_type):
 def format_like_query(input_str):
     return '%' + input_str + '%'
 
+def get_song_details(cursor, song_id):
+    unprocessed_query = 
+
 class DotDict(dict):
 	def __getattr__(self, key):
 		if key not in self:

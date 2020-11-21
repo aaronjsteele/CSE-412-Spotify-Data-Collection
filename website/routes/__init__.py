@@ -63,12 +63,12 @@ def error_page():
 @app.route("/rate", methods=["GET"])
 def rate_song_page():
 	if request.method != "GET":
-		print(f"/rate recieved a {request.method} request when it should have recieved a 'GET' request.")
+		print(f"/rate received a {request.method} request when it should have received a 'GET' request.")
 		return error_page()
-	song = request.args.get("song", "")
+	song_id = request.args.get("song_id", "")
 
 	if not song:
-		print(f"/rate needs to recieve a song-id parameter (eg. /rate?song=123)")
+		print("/rate needs to receive a song-id parameter (eg. /rate?song=123)")
 		return error_page()
 
 	query = f"SELECT song_id as id, song_name as title "\
