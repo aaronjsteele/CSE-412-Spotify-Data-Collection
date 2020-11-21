@@ -60,6 +60,58 @@ def song_page():
 def error_page():
     return "" # should be a template or something
 
+@app.route("/rate", methods=["GET"])
+def rate_song_page():
+	if request.method != "GET":
+		print(f"/rate recieved a {request.method} request when it should have recieved a 'GET' request.")
+		return error_page()
+	song = request.args.get("song", "")
+
+	if not song:
+		print(f"/rate needs to recieve a song-id parameter (eg. /rate?song=123)")
+		return error_page()
+
+	query = f"SELECT song_id as id, song_name as title "\
+			f"FROM song "\
+			f"WHERE song_id='{song}'"
+
+	results = execute_query(query)[0]
+
+	if not results:
+		print(f"/rate was unable to find any songs with id '{song}'")
+		return error_page()
+
+	return render_template("rate.html", song=results)
+
+@app.route("/rate/<song_id>", methods=["POST"])
+def rate(song_id):
+	if request.method != "POST":
+		print(f"failed")
+		return error_page()
+
+	user_id = request.form['user_id']
+	rating_value = int(request.form['rating'])
+	comment = request.form['comment']
+
+	if not 1 <= rating_value <= 10:
+		print(f"/rate/ expected the rating to be between 1 and 10, but instead recieved {rating_value}")
+		return error_page()
+
+	with Database() as cursor:
+		cursor.execute(
+			f"INSERT INTO rates (user_id, song_id, rating_value, comment) "\
+			f"VALUES ('{user_id}', '{song_id}', '{rating_value}', '{comment}') "\
+			f"ON CONFLICT DO NOTHING")
+
+	return ""
+#	return redirect("/")
+
+@app.errorhandler(404)
+def error404(error):
+	print(error)
+	return error_page()
+
+
 class DotDict(dict):
     def __getattr__(self, key):
         if key not in self:
