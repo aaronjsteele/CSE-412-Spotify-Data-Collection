@@ -72,11 +72,11 @@ def rate_song_page():
             print('user_id', user_id)
             return redirect("/sign-in")
         comment = request.form["comment"]
+        # TODO: Remove when user system works
         username = request.form["username"]
         rating = request.form["rating"]
 
         song_id = request.args.get("song_id", "")
-        user_id = query_db.get_user_id(get_db(), username) 
         if not song_id:
             print("/rate needs to receive a song_id parameter (eg. /rate?song=123)")
             return error_page()

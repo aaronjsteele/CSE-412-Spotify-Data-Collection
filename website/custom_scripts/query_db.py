@@ -252,10 +252,6 @@ def sort_by_parser(sort_by_type):
 
 def format_like_query(input_str):
     return '%' + input_str + '%'
-"""
-def get_song_details(cursor, song_id):
-    unprocessed_query = 
-"""
 
 # Thanks to https://pynative.com/python-generate-random-string/
 # for this code for a random string
@@ -268,13 +264,32 @@ def get_or_create_uid(connection, username, password):
     print("We currently aren't actually checking passwords, should probably do that")
 
     cursor = connection.cursor()
-    cursor.execute(f"SELECT user_id FROM user_table WHERE display_name='{username}'")
+    unprocessed_query = (
+        f"SELECT user_id "\
+        f"FROM user_table "\
+        f"WHERE display_name= %s"
+    )
+    query = cursor.mogrify(unprocessed_query, (username,))
+    cursor.execute(query)
     uid = cursor.fetchone()
 
     if not uid:
-        cursor.execute(f"INSERT INTO user_table (user_id, display_name) VALUES (12345, '{username}') ON CONFLICT DO NOTHING")
+        new_uid = get_random_alphanumeric_string(21)
+        new_user_unprocessed_query = (
+            f"INSERT INTO user_table (user_id, display_name) "\
+            f"VALUES (%s, %s) "\
+            f"ON CONFLICT DO NOTHING"
+        )
+        new_user_query = cursor.mogrify(new_user_unprocessed_query, (new_uid, username))
+        cursor.execute(new_user_query)
         connection.commit()
-        cursor.execute(f"SELECT user_id FROM user_table WHERE display_name='{username}'")
+        unprocessed_query = (
+            f"SELECT user_id "\
+            f"FROM user_table "\
+            f"WHERE display_name= %s"
+        )
+        query = cursor.mogrify(unprocessed_query, (username,))
+        cursor.execute(query)
         uid = cursor.fetchone()
     return uid[0].strip()
 
