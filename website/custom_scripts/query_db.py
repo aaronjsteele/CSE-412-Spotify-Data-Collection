@@ -204,6 +204,7 @@ def get_average_rating(cursor, song_id):
         f"FROM ( "\
         f"      SELECT song.song_id AS song_id, ROUND(AVG(rates.rating_value),2) AS avg_rating "\
         f"      FROM song, rates "\
+        f"      WHERE song.song_id = rates.song_id "\
         f"      GROUP BY song.song_id "\
         f"     ) AS avg_table "\
         f"WHERE avg_table.song_id = %s"
@@ -220,6 +221,7 @@ def get_total_listens(cursor, song_id):
         f"FROM ( "\
         f"      SELECT song.song_id AS song_id, COUNT(listens_to.user_id) AS total_listens "\
         f"      FROM song, listens_to "\
+        f"      WHERE song.song_id = listens_to.song_id "\
         f"      GROUP BY song.song_id "\
         f"     ) AS count_table "\
         f"WHERE count_table.song_id = %s"
