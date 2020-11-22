@@ -21,7 +21,7 @@ def list_all(cursor, sort_by_type):
     """
     sort_by_str = sort_by_parser(sort_by_type)
     unprocessed_query = (
-        f"SELECT song_name AS title, artist_name AS artist, album_name AS album, avg_table.avg_rating AS average, count_table.total AS num_listens, song.song_id AS song_id "\
+        f"SELECT DISTINCT song_name AS title, artist_name AS artist, album_name AS album, avg_table.avg_rating AS average, count_table.total AS num_listens, song.song_id AS song_id "\
         f"FROM song, artist, performed_by, album, is_in, "\
         f"    ( "\
         f"        SELECT song.song_id, ROUND(AVG(rates.rating_value),2) AS avg_rating "\
@@ -56,7 +56,7 @@ def search_by(cursor, input_str, query_type, sort_by_type):
     sort_by_str = sort_by_parser(sort_by_type)
     query_type_str = query_type_parser(query_type)
     unprocessed_query = (
-        f"SELECT song_name AS title, artist_name AS artist, album_name AS album, avg_table.avg_rating AS average, count_table.total AS num_listens, song.song_id AS song_id "\
+        f"SELECT DISTINCT song_name AS title, artist_name AS artist, album_name AS album, avg_table.avg_rating AS average, count_table.total AS num_listens, song.song_id AS song_id "\
         f"FROM song, artist, performed_by, album, is_in, is_genre, "\
         f"    ( "\
         f"        SELECT song.song_id, ROUND(AVG(rates.rating_value),2) AS avg_rating "\
@@ -86,7 +86,7 @@ def search_by(cursor, input_str, query_type, sort_by_type):
 def songs_by_artist(cursor, artist):
     """List all songs by the artist with the given name"""
     unprocessed_query = (
-        f"SELECT song_name as title, artist_name as artist FROM song, performed_by, artist "\
+        f"SELECT DISTINCT song_name as title, artist_name as artist FROM song, performed_by, artist "\
         f"WHERE song.song_id = performed_by.song_id "\
         f"AND performed_by.artist_id = artist.artist_id "\
         f"AND artist_name = %s"
