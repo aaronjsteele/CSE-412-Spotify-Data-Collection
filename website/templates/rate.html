@@ -1,35 +1,65 @@
 {% extends "base.html" %} {% block content %}
-<h1><b>{{song_name}}</b> by </h1>
+<h1 class="display-3"><i><b>{{song.song_name}}</b></i></h1>
+<h4><b>Artist:</b> {{song.artist_name}}</h4>
+<h4><b>Album:</b> {{song.album_name}}</h4>
+<h4><b>Rating:</b> {{avg_rating}}/10</h4>
 
-<form method="POST" action="/rate/{{song_id}}">
+<div class="form-group">&nbsp;</div>
+
+<label for="rating_submission" style="font-size: 24px"><b>Leave a Rating:</b></label>
+{% set destination_address = '/rate?song_id=' + song_id %}
+<form method="POST" action={{destination_address}} id="rating_submission">
   <div class="form-group">
     <label for="comment_box">Comment:</label>
-    <textarea class="form-control" rows="5" id="comment_box" placeholder="Enter your comment here."></textarea>
+    <textarea
+      class="form-control"
+      rows="5"
+      id="comment_box"
+      placeholder="Enter your comment here."
+      name="comment"
+      required
+    ></textarea>
   </div>
   <div class="form row">
     <div class="form-group col-4">
       <label for="post_username">Posting as:</label>
-      <input type="text" class="form-control" id="post_username" placeholder="Username">
+      <input
+        type="text"
+        class="form-control"
+        id="post_username"
+        placeholder="Username"
+        name="username"
+        required
+      />
     </div>
     <div class="form-group col-4">
       <label for="post_rating">Rating:</label>
-      <input type="number" class="form-control" id="post_rating" min="1" max="10" step="1" placeholder="5">
+      <input
+        type="number"
+        class="form-control"
+        id="post_rating"
+        min="1"
+        max="10"
+        step="1"
+        placeholder="5"
+        name="rating"
+        required
+      />
     </div>
   </div>
+  <input type="hidden" name="song_id" value={{song_id}}/>
   <button type="submit" class="btn btn-primary">Submit</button>
 </form>
 
-<div class="form-group">
-  &nbsp;
-</div>
+<div class="form-group">&nbsp;</div>
 
-<label for="comment_list" style="font-size:24px;"><b>Ratings:</b></label>
+<label for="comment_list" style="font-size: 24px"><b>Ratings:</b></label>
 <div class="list-group" id="comment_list">
   {% for rating in results %}
   <div class="list-group-item flex-column align-items-start">
     <div class="d-flex w-100 justify-content-between">
       <h5 class="mb-1">{{rating.username}}</h5>
-      <small>{{rating.rating}}/10</small>
+      <h5>{{rating.rating}}/10</h5>
     </div>
     <p class="mb-1">{{rating.comment}}</p>
   </div>
