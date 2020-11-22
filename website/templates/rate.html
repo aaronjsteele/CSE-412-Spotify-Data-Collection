@@ -30,7 +30,7 @@
 
 <div class="form-group">&nbsp;</div>
 
-<label for="rating_submission" style="font-size: 24px"><b>Leave a Rating:</b></label>
+<label for="rating_submission" style="font-size: 24px"><b>Leave a Rating as {{request.cookies.get('username')}}:</b></label>
 {% set destination_address = '/rate?song_id=' + song_id %}
 <form method="POST" action={{destination_address}} id="rating_submission">
   <div class="form-group">

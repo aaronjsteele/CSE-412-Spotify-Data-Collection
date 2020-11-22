@@ -2,12 +2,8 @@ import psycopg2
 import random
 import string
 
-def test():
-    print("hello")
-    return
-
-# Initiates connection to DB server, returns a connection
 def init_db_connection():
+    """Initiates connection to DB server, returns a connection"""
     import website.config as config
     connection = psycopg2.connect(
         host = config.host,
@@ -19,7 +15,10 @@ def init_db_connection():
     return connection
 
 def list_all(cursor, sort_by_type):
-    # function that list all the songs when the search bar is empty
+    """List all songs when search bar is empty
+
+    sort_by_type: how to sort the results, must be supported by 'sort_by_parser'
+    """
     sort_by_str = sort_by_parser(sort_by_type)
     unprocessed_query = (
         f"SELECT song_name AS title, artist_name AS artist, album_name AS album, avg_table.avg_rating AS average, count_table.total AS num_listens, song.song_id AS song_id "\
@@ -47,12 +46,18 @@ def list_all(cursor, sort_by_type):
     query = cursor.mogrify(unprocessed_query)
     return execute_query_and_return(cursor, query)
 
-def search_by(cursor, input_str, query_type, sort_by_type): 
-    # function that performs a query based on the query type
+def search_by(cursor, input_str, query_type, sort_by_type):
+    """Perform a search query
+
+    input_str: is the value to search for
+    query_type: is what field to search for, must be supported by 'query_type_parser'
+    sort_by_type: is what field to order by, must be supported by 'sort_by_parser'
+    """
     sort_by_str = sort_by_parser(sort_by_type)
+    query_type_str = query_type_parser(query_type)
     unprocessed_query = (
         f"SELECT song_name AS title, artist_name AS artist, album_name AS album, avg_table.avg_rating AS average, count_table.total AS num_listens, song.song_id AS song_id "\
-        f"FROM song, artist, performed_by, album, is_in, "\
+        f"FROM song, artist, performed_by, album, is_in, is_genre, "\
         f"    ( "\
         f"        SELECT song.song_id, ROUND(AVG(rates.rating_value),2) AS avg_rating "\
         f"        FROM song, rates "\
@@ -71,24 +76,27 @@ def search_by(cursor, input_str, query_type, sort_by_type):
         f"    AND is_in.album_id = album.album_id  "\
         f"    AND avg_table.song_id = song.song_id "\
         f"    AND count_table.song_id = song.song_id "\
-        f"    AND {query_type}.{query_type}_name ILIKE %s "\
+        f"    AND is_genre.artist_id = artist.artist_id "\
+        f"    AND {query_type_str} ILIKE %s "\
         f"ORDER BY {sort_by_str}"
     )
     query = cursor.mogrify(unprocessed_query, (format_like_query(input_str),))
     return execute_query_and_return(cursor, query)
 
 def songs_by_artist(cursor, artist):
+    """List all songs by the artist with the given name"""
     unprocessed_query = (
         f"SELECT song_name as title, artist_name as artist FROM song, performed_by, artist "\
         f"WHERE song.song_id = performed_by.song_id "\
         f"AND performed_by.artist_id = artist.artist_id "\
-        f"AND artist_name='{artist}'"
+        f"AND artist_name = %s"
     )
-    query = cursor.mogrify(unprocessed_query)
+    query = cursor.mogrify(unprocessed_query, (artist,))
     return execute_query_and_return(cursor, query)
 
 
 def rate_song_page(cursor, song_id):
+    """List all ratings given to a song with a certain id"""
     unprocessed_query = (
         f"SELECT song.song_name AS song_name, user_table.display_name AS username, rates.comment AS comment, rates.rating_value AS rating "\
         f"FROM song, rates, user_table "\
@@ -114,6 +122,7 @@ def get_song_info(cursor, song_id):
     return execute_query_and_return(cursor, query)
 
 def get_countries_available(cursor, song_id):
+    """Find what countries a song is available in from song_id"""
     unprocessed_query = (
         f"SELECT available_in.country_name AS country_name "\
         f"FROM song, available_in "\
@@ -123,9 +132,12 @@ def get_countries_available(cursor, song_id):
     query = cursor.mogrify(unprocessed_query, (song_id,))
     return execute_query_and_return(cursor, query)
 
-# Gets ID of user posting a comment. If the user does not exist,
-# a new ID is created and entered into the database.
 def get_user_id(connection, username):
+    """Find or create the user id for a given user
+
+    If the user already exists, return the user_id
+    If the user does not exist, create a new user and return their new user_id
+    """
     cursor = connection.cursor()
     unprocessed_query = (
         f"SELECT user_id "\
@@ -138,14 +150,19 @@ def get_user_id(connection, username):
 
     # Case if user does not exist
     if not results:
-        print("User does not exist! Generating new user.")
+        print(f"User '{username}' does not exist! Generating new user.")
         new_user_id = get_random_alphanumeric_string(21)
+        while check_if_user_id_exists(cursor, new_user_id):
+            # In case the new user_id already exists
+            print(f"ID '{new_user_id}' already exists, generating a new one.")
+            new_user_id = get_random_alphanumeric_string(21)
         insert_new_user(connection, new_user_id, username)
         return new_user_id
     else:
         return results[0][0].strip()
 
 def insert_new_user(connection, user_id, username):
+    """Create a new entry in the user database"""
     cursor = connection.cursor()
     unprocessed_query = (
         f"INSERT INTO user_table (user_id, display_name) "\
@@ -156,14 +173,23 @@ def insert_new_user(connection, user_id, username):
     cursor.execute(query)
     connection.commit()
 
+def check_if_user_id_exists(cursor, user_id):
+    """Return whether the user_id is in the user_table"""
+    unprocessed_query = (
+        f"SELECT * "\
+        f"FROM user_table "\
+        f"WHERE user_id = %s"
+    )
+    query = cursor.mogrify(unprocessed_query, (user_id,))
+    cursor.execute(query)
+    return bool(cursor.fetchone())
+
 # NOTE: FOR ANY COMMAND TO COMMIT DATA TO THE DATABASE, WE MUST
 # PASS THE CONNECTION, NOT THE CURSOR
-#
-# Creates a rating on a song. Either enters a new entry or updates an existing
-# entry depending if one has been made previously.
 def rate(connection, user_id, song_id, rating_value, comment):
+    """Creates or updates a rating on a song"""
     cursor = connection.cursor()
-    # Case if user has NOT made rating on song previously
+    # Case if user has NOT made rating on this song previously
     if not check_if_comment_made(cursor, user_id, song_id):
         unprocessed_query = (
             f"INSERT INTO rates (user_id, song_id, rating_value, comment) "\
@@ -178,27 +204,24 @@ def rate(connection, user_id, song_id, rating_value, comment):
             f"WHERE user_id = %s AND song_id = %s"
         )
         query = cursor.mogrify(unprocessed_query, (comment, rating_value, user_id, song_id))
-    print(query)
     cursor.execute(query)
     print("Rate query executed! Committing now!")
     connection.commit()
 
-# Checks if a user has made a comment on a song
 def check_if_comment_made(cursor, user_id, song_id):
+    """Checks if a user has made a comment on a song"""
     unprocessed_query = (
         f"SELECT * "\
         f"FROM rates "\
-        f"WHERE user_id=%s AND song_id=%s"
+        f"WHERE user_id = %s AND song_id = %s"
     )
     query = cursor.mogrify(unprocessed_query, (user_id, song_id))
     cursor.execute(query)
     results = cursor.fetchall()
-    if not results:
-        return False
-    else:
-        return True
+    return bool(results)
 
 def get_average_rating(cursor, song_id):
+    """Find the average rating for a song"""
     unprocessed_query = (
         f"SELECT avg_table.avg_rating "\
         f"FROM ( "\
@@ -212,10 +235,10 @@ def get_average_rating(cursor, song_id):
     query = cursor.mogrify(unprocessed_query, (song_id,))
     cursor.execute(query)
     results = cursor.fetchall()
-    print(results[0][0])
     return results[0][0]
 
 def get_total_listens(cursor, song_id):
+    """Find the number of listens for a given song"""
     unprocessed_query = (
         f"SELECT count_table.total_listens "\
         f"FROM ( "\
@@ -229,10 +252,10 @@ def get_total_listens(cursor, song_id):
     query = cursor.mogrify(unprocessed_query, (song_id,))
     cursor.execute(query)
     results = cursor.fetchall()
-    print(results[0][0])
     return results[0][0]
 
 def execute_query_and_return(cursor, query):
+    """Execute a query and return the result as a list of dicts"""
     cursor.execute(query)
     results = cursor.fetchall()
     keys = [column.name for column in cursor.description]
@@ -320,6 +343,16 @@ def sort_by_parser(sort_by_type):
         string = "album_name"
     elif sort_by_type == "popularity":
         string = "popularity DESC"
+    elif sort_by_type == "ratings":
+        string = "avg_table.avg_rating DESC"
+    return string
+
+def query_type_parser(query_type):
+    string = ""
+    if query_type in {"artist", "song", "album"}:
+        string = f"{query_type}.{query_type}_name"
+    elif query_type == "genre":
+        string = f"is_genre.genre_name"
     return string
 
 def format_like_query(input_str):
@@ -332,40 +365,8 @@ def get_random_alphanumeric_string(length):
     result_str = ''.join((random.choice(letters_and_digits) for i in range(length)))
     return result_str
 
-def get_or_create_uid(connection, username, password):
-    print("We currently aren't actually checking passwords, should probably do that")
-
-    cursor = connection.cursor()
-    unprocessed_query = (
-        f"SELECT user_id "\
-        f"FROM user_table "\
-        f"WHERE display_name= %s"
-    )
-    query = cursor.mogrify(unprocessed_query, (username,))
-    cursor.execute(query)
-    uid = cursor.fetchone()
-
-    if not uid:
-        new_uid = get_random_alphanumeric_string(21)
-        new_user_unprocessed_query = (
-            f"INSERT INTO user_table (user_id, display_name) "\
-            f"VALUES (%s, %s) "\
-            f"ON CONFLICT DO NOTHING"
-        )
-        new_user_query = cursor.mogrify(new_user_unprocessed_query, (new_uid, username))
-        cursor.execute(new_user_query)
-        connection.commit()
-        unprocessed_query = (
-            f"SELECT user_id "\
-            f"FROM user_table "\
-            f"WHERE display_name= %s"
-        )
-        query = cursor.mogrify(unprocessed_query, (username,))
-        cursor.execute(query)
-        uid = cursor.fetchone()
-    return uid[0].strip()
-
 class DotDict(dict):
+    """The same as dict except you can use dot notation and it will not crash if you try to access a bad name"""
     def __getattr__(self, key):
         if key not in self:
             print(f"There was an error while trying to access '{key}' from {self}")
