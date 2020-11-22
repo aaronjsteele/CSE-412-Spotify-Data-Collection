@@ -50,9 +50,10 @@ def list_all(cursor, sort_by_type):
 def search_by(cursor, input_str, query_type, sort_by_type): 
     # function that performs a query based on the query type
     sort_by_str = sort_by_parser(sort_by_type)
+    query_type_str = query_type_parser(query_type)
     unprocessed_query = (
         f"SELECT song_name AS title, artist_name AS artist, album_name AS album, avg_table.avg_rating AS average, count_table.total AS num_listens, song.song_id AS song_id "\
-        f"FROM song, artist, performed_by, album, is_in, "\
+        f"FROM song, artist, performed_by, album, is_in, is_genre, "\
         f"    ( "\
         f"        SELECT song.song_id, ROUND(AVG(rates.rating_value),2) AS avg_rating "\
         f"        FROM song, rates "\
@@ -71,7 +72,8 @@ def search_by(cursor, input_str, query_type, sort_by_type):
         f"    AND is_in.album_id = album.album_id  "\
         f"    AND avg_table.song_id = song.song_id "\
         f"    AND count_table.song_id = song.song_id "\
-        f"    AND {query_type}.{query_type}_name ILIKE %s "\
+        f"    AND is_genre.artist_id = artist.artist_id "\
+        f"    AND {query_type_str} ILIKE %s "\
         f"ORDER BY {sort_by_str}"
     )
     query = cursor.mogrify(unprocessed_query, (format_like_query(input_str),))
@@ -250,6 +252,14 @@ def sort_by_parser(sort_by_type):
         string = "popularity DESC"
     elif sort_by_type == "ratings":
         string = "avg_table.avg_rating DESC"
+    return string
+
+def query_type_parser(query_type):
+    string = ""
+    if query_type in {"artist", "song", "album"}:
+        string = f"{query_type}.{query_type}_name"
+    elif query_type == "genre":
+        string = f"is_genre.genre_name"
     return string
 
 def format_like_query(input_str):
