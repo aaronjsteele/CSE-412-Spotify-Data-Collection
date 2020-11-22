@@ -30,23 +30,6 @@ def artist_page():
         print(f"/songs-by-artist needs to receive an 'artist' parameter (eg. /songs-by-artist?artist=bob)")
         return error_page()
     return render_template("artist.html", artist_name=artist)
-
-@app.route("/selected-song", methods=["GET"])
-def song_page():
-    # Will need to implement method for POST (for submitting ratings/comments)
-    if request.method != "GET":
-        print(f"/selected-song received a {request.method} request when it should have received a 'GET' request.")
-        return error_page()
-    song_id = request.args.get("song_id", "")
-
-    if not song_id:
-        print(f"/selected-song needs to receive an 'song_id' parameter. How did you get here?")
-        return error_page()
-
-    # Will want to put query here that gets all comments
-
-    # For template, want to pass in array of all comments (from query results)
-    return render_template("songpage.html")
  
 @app.route("/rate", methods=["GET", "POST"])
 def rate_song_page():
@@ -115,7 +98,6 @@ def log_in():
         page.set_cookie('username', username)
         return page
 
-
 @app.route("/sign-out", methods=["GET"])
 def log_out():
     page = redirect(request.referrer)
@@ -146,7 +128,6 @@ def get_db():
     if not hasattr(g, 'postgres_db'):
         g.postgres_db = query_db.init_db_connection()
     return g.postgres_db
-
 
 @app.teardown_appcontext
 def close_db(input):
