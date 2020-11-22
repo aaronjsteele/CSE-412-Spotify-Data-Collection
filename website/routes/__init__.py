@@ -23,13 +23,13 @@ def main_page():
 @app.route("/artist", methods=["GET"])
 def artist_page():
     if request.method != "GET":
-        print(f"/songs-by-artist received a {request.method} request when it should have received a 'GET' request.")
+        print(f"/  artist received a {request.method} request when it should have received a 'GET' request.")
         return error_page()
     artist = request.args.get("artist", "")
     if not artist:
         print(f"/songs-by-artist needs to receive an 'artist' parameter (eg. /songs-by-artist?artist=bob)")
         return error_page()
-    return render_template("index.html", prev=["", "", ""], songs=query_db.songs_by_artist(get_db().cursor(), artist))
+    return render_template("artist.html", artist_name=artist)
 
 @app.route("/selected-song", methods=["GET"])
 def song_page():
@@ -47,7 +47,7 @@ def song_page():
 
     # For template, want to pass in array of all comments (from query results)
     return render_template("songpage.html")
-
+ 
 @app.route("/rate", methods=["GET", "POST"])
 def rate_song_page():
     if request.method != "GET":
