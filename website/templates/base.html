@@ -25,19 +25,24 @@
       integrity="sha384-ho+j7jyWK8fNQe+A12Hb8AhRq26LrZ/JpcUGGOn+Y7RsweNrtN/tE3MoK7ZeZDyx"
       crossorigin="anonymous"
     ></script>
+    <script src="//code.jquery.com/jquery-1.11.1.min.js"></script>
+
+    <script src="https://kit.fontawesome.com/f08bf71ed8.js" crossorigin="anonymous"></script>
   </head>
   <body>
     <!-- navbar -->
     <nav class="navbar navbar-dark bg-dark">
-      <a class="navbar-brand">Spotify Music Library</a>
+      <a class="navbar-brand" href="/">Spotify Music Library</a>
       {% if request.cookies.get('username') %}
-      <a class="navbar-brand" href="/sign-out">Log out from {{request.cookies.get('username')}}</a>
+      <a class="navbar-brand" href="/sign-out"
+        >Log out from {{request.cookies.get('username')}}</a
+      >
       {% else %}
       <a class="navbar-brand" href="/sign-in">Log in</a>
       {% endif %}
     </nav>
     <div id="content">
-      <div class="container">{% block content %}{% endblock %}</div>
+      <div class="container h-100">{% block content %}{% endblock %}</div>
     </div>
     <!-- footer -->
   </body>
