@@ -264,6 +264,20 @@ def get_random_alphanumeric_string(length):
     result_str = ''.join((random.choice(letters_and_digits) for i in range(length)))
     return result_str
 
+def get_or_create_uid(connection, username, password):
+    print("We currently aren't actually checking passwords, should probably do that")
+
+    cursor = connection.cursor()
+    cursor.execute(f"SELECT user_id FROM user_table WHERE display_name='{username}'")
+    uid = cursor.fetchone()
+
+    if not uid:
+        cursor.execute(f"INSERT INTO user_table (user_id, display_name) VALUES (12345, '{username}') ON CONFLICT DO NOTHING")
+        connection.commit()
+        cursor.execute(f"SELECT user_id FROM user_table WHERE display_name='{username}'")
+        uid = cursor.fetchone()
+    return uid[0].strip()
+
 class DotDict(dict):
     def __getattr__(self, key):
         if key not in self:
