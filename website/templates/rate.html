@@ -7,7 +7,7 @@
 
 <div class="form-group">&nbsp;</div>
 
-<label for="rating_submission" style="font-size: 24px"><b>Leave a Rating:</b></label>
+<label for="rating_submission" style="font-size: 24px"><b>Leave a Rating as {{request.cookies.get('username')}}:</b></label>
 {% set destination_address = '/rate?song_id=' + song_id %}
 <form method="POST" action={{destination_address}} id="rating_submission">
   <div class="form-group">
@@ -21,32 +21,18 @@
       required
     ></textarea>
   </div>
-  <div class="form row">
-    <div class="form-group col-4">
-      <label for="post_username">Posting as:</label>
-      <input
-        type="text"
-        class="form-control"
-        id="post_username"
-        placeholder="Username"
-        name="username"
-        required
-      />
-    </div>
-    <div class="form-group col-4">
-      <label for="post_rating">Rating:</label>
-      <input
-        type="number"
-        class="form-control"
-        id="post_rating"
-        min="1"
-        max="10"
-        step="1"
-        placeholder="5"
-        name="rating"
-        required
-      />
-    </div>
+    <label for="post_rating">Rating:</label>
+    <input
+      type="number"
+      class="form-control"
+      id="post_rating"
+      min="1"
+      max="10"
+      step="1"
+      placeholder="5"
+      name="rating"
+      required
+    />
   </div>
   <input type="hidden" name="song_id" value={{song_id}}/>
   <button type="submit" class="btn btn-primary">Submit</button>
