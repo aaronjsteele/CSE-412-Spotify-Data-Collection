@@ -1,5 +1,5 @@
 from website import app
-from flask import render_template, request, g, redirect
+from flask import render_template, request, g, redirect, make_response
 import os
 import sys
 from website.custom_scripts import *
@@ -50,34 +50,59 @@ def song_page():
  
 @app.route("/rate", methods=["GET", "POST"])
 def rate_song_page():
-    if request.method != "GET":
-        print(f"/rate received a {request.method} request when it should have received a 'GET' request.")
-        return error_page()
-    song_id = request.args.get("song_id", "")
-    if not song_id:
-        print("/rate needs to receive a song_id parameter (eg. /rate?song=123)")
-        return error_page()
-    results = query_db.rate_song_page(get_db().cursor(), song_id)
-    print(results[0].song_name)
-    if not results:
-        print(f"/rate was unable to find any songs with id '{song_id}'")
-        return error_page()
-    return render_template("rate.html", song_id=song_id, song_name=results[0].song_name, results=results)
+    if request.method == "GET":
+        user_id = request.cookies.get('user_id')
+        if not user_id:
+            print('user_id', user_id)
+            return redirect("/sign-in")
+        song_id = request.args.get("song_id", "")
+        if not song_id:
+            print("/rate needs to receive a song_id parameter (eg. /rate?song=123)")
+            return error_page()
+        results = query_db.rate_song_page(get_db().cursor(), song_id)
+        if not results:
+            print(f"/rate was unable to find any songs with id '{song_id}'")
+            return error_page()
+        return render_template("rate.html", song_id=song_id, song_name=results[0].song_name, results=results)
+    else:
+        user_id = request.cookies.get('user_id')
+        if not user_id:
+            print('user_id', user_id)
+            return redirect("/sign-in")
+        song_id = request.form["song_id"]
+        if not song_id:
+            print(f"/rate/ expected to recieve a song_id")
+        rating = request.form['rating']
+        comment = request.form['comment']
+        if not rating.isdigit():
+            print(f"/rate/ expected the rating to be an integer, but instead received '{rating}'")
+            return error_page()
+        rating = int(rating)
+        if not 1 <= rating <= 10:
+            print(f"/rate/ expected the rating to be between 1 and 10, but instead received '{rating}'")
+            return error_page()
+        query_db.rate(get_db(), user_id, song_id, rating, comment)
+        return redirect("/")
 
+@app.route("/sign-in", methods=["GET", "POST"])
+def log_in():
+    if request.method == "GET":
+        return render_template("sign-in.html")
+    else:
+        username = request.form['username']
+        password = request.form['password']
+        user_id = query_db.get_or_create_uid(get_db(), username=username, password=password)
+        page = make_response(redirect("/"))
+        page.set_cookie('user_id', user_id)
+        page.set_cookie('username', username)
+        return page
 
-@app.route("/rate/<song_id>", methods=["POST"])
-def rate(song_id):
-    if request.method != "POST":
-        print(f"failed")
-        return error_page()
-    user_id = request.form['user_id']
-    rating_value = int(request.form['rating'])
-    comment = request.form['comment']
-    if not 1 <= rating_value <= 10:
-        print(f"/rate/ expected the rating to be between 1 and 10, but instead received {rating_value}")
-        return error_page()
-    query_db.rate_song_page(get_db(), user_id, song_id, rating_value, comment)		
-    return redirect("/")
+@app.route("/sign-out", methods=["GET"])
+def log_out():
+    page = redirect(request.referrer)
+    page.set_cookie('userID', "")
+    page.set_cookie('username', "")
+    return page
 
 def error_page():
     return "FUCK" # should be a template or something

@@ -1,0 +1,12 @@
+{% extends "base.html" %} {% block content %}
+<h1>Sign in or Create an Account</h1>
+
+<form method="POST" action="/sign-in">
+  <label for="username">Username:</label></br>
+  <input type="text" id="username" name="username"></br>
+  <label for="pass">Password:</label></br>
+  <input type="password" id="password" name="password"></br>
+  <input type="submit" value="Sign in or Create Account">
+</form>
+
+{% endblock %}
