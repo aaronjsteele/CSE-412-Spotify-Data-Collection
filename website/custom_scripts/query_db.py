@@ -97,6 +97,7 @@ def rate_song_page(cursor, song_id):
     query = cursor.mogrify(unprocessed_query, (song_id,))
     return execute_query_and_return(cursor, query)
 
+# TODO: NOT FINISHED!!!!
 def get_song_info(cursor, song_id):
     unprocessed_query = (
         f"SELECT song.song_name AS song_name, "
