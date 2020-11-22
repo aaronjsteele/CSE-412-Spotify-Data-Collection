@@ -238,6 +238,78 @@ def execute_query_and_return(cursor, query):
     keys = [column.name for column in cursor.description]
     return [DotDict({key: data for key, data in zip(keys, row)}) for row in results]
 
+def check_if_listened(cursor, user_id, song_id):
+    unprocessed_query = (
+        f"SELECT * "\
+        f"FROM listens_to "\
+        f"WHERE listens_to.user_id = %s AND listens_to.song_id = %s"
+    )
+    query = cursor.mogrify(unprocessed_query, (user_id, song_id))
+    cursor.execute(query)
+    results = cursor.fetchall()
+    if not results:
+        return False
+    else:
+        return True
+
+def add_listen(connection, user_id, song_id):
+    cursor = connection.cursor()
+    unprocessed_query = (
+        f"INSERT INTO listens_to (user_id, song_id) "\
+        f"VALUES (%s, %s) "\
+        f"ON CONFLICT DO NOTHING"
+    )
+    query = cursor.mogrify(unprocessed_query, (user_id, song_id))
+    cursor.execute(query)
+    print("added " + user_id + song_id)
+    connection.commit()
+
+# Gets details on if a song is explicit, its length,
+# and the countries in which it is available.
+# Is special -- returns an array with 4 elements:
+#   1. Whether it is or is not explicit
+#   2. Length of the song
+#   3. Popularity
+#   4. List of countries song is available in
+def get_other_song_details(cursor, song_id):
+    unprocessed_query = (
+        f"SELECT is_explicit, duration, popularity "\
+        f"FROM song "\
+        f"WHERE song_id = %s"
+    )
+    query = cursor.mogrify(unprocessed_query, (song_id,))
+    cursor.execute(query)
+    results = cursor.fetchall()
+    to_return = [results[0][0], convert_to_time(results[0][1]), results[0][2], get_countries(cursor, song_id)]
+    print(to_return)
+    return to_return
+
+def get_countries(cursor, song_id):
+    unprocessed_query = (
+        f"SELECT available_in.country_name AS country_name "\
+        f"FROM song, available_in "\
+        f"WHERE song.song_id = available_in.song_id "\
+        f"  AND song.song_id = %s"
+    )
+    query = cursor.mogrify(unprocessed_query, (song_id,))
+    cursor.execute(query)
+    results = cursor.fetchall()
+    output = ""
+    results_len = len(results)-1
+    for entry in results:
+        output += entry[0].strip()
+        if results.index(entry) != results_len:
+            output += ", "
+    print(output)
+    return output
+
+def convert_to_time(millis):
+    seconds = (millis/1000)%60
+    seconds = int(seconds)
+    minutes = (millis/(1000*60))%60
+    minutes = int(minutes)
+    return ("%d:%d" % (minutes, seconds))
+
 def sort_by_parser(sort_by_type):
     string = ""
     if sort_by_type == "title":

@@ -8,7 +8,7 @@ from website.custom_scripts import *
 @app.route("/", methods=["GET", "POST"])
 def main_page():
     if request.method == "GET":
-        return render_template("index.html", prev=["", "", ""])
+        return render_template("homepage.html", prev=["", "", ""])
     elif request.method == "POST":
         # logic for querying database and return data
         search_string = request.form['inputString']
@@ -44,19 +44,32 @@ def rate_song_page():
             return error_page()
         results = query_db.rate_song_page(get_db().cursor(), song_id)
 
+        listened_to = request.args.get("listened_to", "")
+        print(listened_to)
+        if listened_to == '1':
+            print("entered if")
+            # Logic for ADDING the listened_to relationship
+            query_db.add_listen(get_db(), user_id, song_id)
+
         print(results[0].song_name)
         if not results:
             print(f"/rate was unable to find any songs with id '{song_id}'")
             return error_page()
-        return render_template("rate.html", song_id=song_id, avg_rating=query_db.get_average_rating(get_db().cursor(), song_id), total_listens=query_db.get_total_listens(get_db().cursor(), song_id), song=query_db.get_song_info(get_db().cursor(), song_id)[0], results=results)
+        return render_template("rate.html",
+                                song_id=song_id,
+                                avg_rating=query_db.get_average_rating(get_db().cursor(), song_id),
+                                total_listens=query_db.get_total_listens(get_db().cursor(), song_id),
+                                song=query_db.get_song_info(get_db().cursor(), song_id)[0],
+                                listened_to_song=query_db.check_if_listened(get_db().cursor(), user_id, song_id),
+                                other_details=query_db.get_other_song_details(get_db().cursor(), song_id),
+                                results=results)
+
     elif request.method == "POST":
         user_id = request.cookies.get('user_id')
         if not user_id:
             print('user_id', user_id)
             return redirect("/sign-in")
         comment = request.form["comment"]
-        # TODO: Remove when user system works
-        username = request.form["username"]
         rating = request.form["rating"]
 
         song_id = request.args.get("song_id", "")
@@ -80,7 +93,14 @@ def rate_song_page():
         if not results:
             print(f"/rate was unable to find any songs with id '{song_id}'")
             return error_page()
-        return render_template("rate.html", song_id=song_id, avg_rating=query_db.get_average_rating(get_db().cursor(), song_id), total_listens=query_db.get_total_listens(get_db().cursor(), song_id), song=query_db.get_song_info(get_db().cursor(), song_id)[0], results=results)
+        return render_template("rate.html",
+                                song_id=song_id,
+                                avg_rating=query_db.get_average_rating(get_db().cursor(), song_id),
+                                total_listens=query_db.get_total_listens(get_db().cursor(), song_id),
+                                song=query_db.get_song_info(get_db().cursor(), song_id)[0],
+                                listened_to_song=query_db.check_if_listened(get_db().cursor(), user_id, song_id),
+                                other_details=query_db.get_other_song_details(get_db().cursor(), song_id),
+                                results=results)
     else:
         print(f"/rate received a {request.method} request when it should have received a 'GET' or 'POST' request.")
         return error_page()
@@ -94,6 +114,7 @@ def log_in():
         password = request.form['password']
         user_id = query_db.get_or_create_uid(get_db(), username=username, password=password)
         page = make_response(redirect("/"))
+        # FUCK
         page.set_cookie('user_id', user_id)
         page.set_cookie('username', username)
         return page
