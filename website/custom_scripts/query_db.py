@@ -152,6 +152,10 @@ def get_user_id(connection, username):
     if not results:
         print(f"User '{username}' does not exist! Generating new user.")
         new_user_id = get_random_alphanumeric_string(21)
+        while check_if_user_id_exists(cursor, new_user_id):
+            # In case the new user_id already exists
+            print(f"ID '{new_user_id}' already exists, generating a new one.")
+            new_user_id = get_random_alphanumeric_string(21)
         insert_new_user(connection, new_user_id, username)
         return new_user_id
     else:
@@ -168,6 +172,17 @@ def insert_new_user(connection, user_id, username):
     query = cursor.mogrify(unprocessed_query, (user_id, username))
     cursor.execute(query)
     connection.commit()
+
+def check_if_user_id_exists(cursor, user_id):
+    """Return whether the user_id is in the user_table"""
+    unprocessed_query = (
+        f"SELECT * "\
+        f"FROM user_table "\
+        f"WHERE user_id = %s"
+    )
+    query = cursor.mogrify(unprocessed_query, (user_id,))
+    cursor.execute(query)
+    return bool(cursor.fetchone())
 
 # NOTE: FOR ANY COMMAND TO COMMIT DATA TO THE DATABASE, WE MUST
 # PASS THE CONNECTION, NOT THE CURSOR
