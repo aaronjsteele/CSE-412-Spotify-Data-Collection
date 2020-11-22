@@ -1,9 +1,39 @@
 {% extends "base.html" %} {% block content %}
-<h1>Rate: {{song.title}}</h1>
-<form method="POST" action="/rate/{{song.id}}">
-  <input name="user_id" placeholder="Enter user-id" />
-  <input name="comment" placeholder="Comments" />
-  <input name="rating" type="number" min="1" max="5" step="1" placeholder="5" />
-  <button type="submit">Submit</button>
+<h1><b>{{song_name}}</b> by </h1>
+
+<form method="POST" action="/rate/{{song_id}}">
+  <div class="form-group">
+    <label for="comment_box">Comment:</label>
+    <textarea class="form-control" rows="5" id="comment_box" placeholder="Enter your comment here."></textarea>
+  </div>
+  <div class="form row">
+    <div class="form-group col-4">
+      <label for="post_username">Posting as:</label>
+      <input type="text" class="form-control" id="post_username" placeholder="Username">
+    </div>
+    <div class="form-group col-4">
+      <label for="post_rating">Rating:</label>
+      <input type="number" class="form-control" id="post_rating" min="1" max="10" step="1" placeholder="5">
+    </div>
+  </div>
+  <button type="submit" class="btn btn-primary">Submit</button>
 </form>
+
+<div class="form-group">
+  &nbsp;
+</div>
+
+<label for="comment_list" style="font-size:24px;"><b>Ratings:</b></label>
+<div class="list-group" id="comment_list">
+  {% for rating in results %}
+  <div class="list-group-item flex-column align-items-start">
+    <div class="d-flex w-100 justify-content-between">
+      <h5 class="mb-1">{{rating.username}}</h5>
+      <small>{{rating.rating}}/10</small>
+    </div>
+    <p class="mb-1">{{rating.comment}}</p>
+  </div>
+  {% endfor %}
+</div>
+
 {% endblock %}

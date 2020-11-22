@@ -29,7 +29,7 @@ def artist_page():
     if not artist:
         print(f"/songs-by-artist needs to receive an 'artist' parameter (eg. /songs-by-artist?artist=bob)")
         return error_page()
-    return render_template("index.html", prev=["", " ", " "], songs=query_db.songs_by_artist(get_db().cursor(), artist))
+    return render_template("index.html", prev=["", "", ""], songs=query_db.songs_by_artist(get_db().cursor(), artist))
 
 @app.route("/selected-song", methods=["GET"])
 def song_page():
@@ -40,7 +40,7 @@ def song_page():
     song_id = request.args.get("song_id", "")
 
     if not song_id:
-        print(f"/selected-song needs to receive an 'song-id' parameter. How did you get here?")
+        print(f"/selected-song needs to receive an 'song_id' parameter. How did you get here?")
         return error_page()
 
     # Will want to put query here that gets all comments
@@ -48,20 +48,21 @@ def song_page():
     # For template, want to pass in array of all comments (from query results)
     return render_template("songpage.html")
 
-@app.route("/rate", methods=["GET"])
+@app.route("/rate", methods=["GET", "POST"])
 def rate_song_page():
     if request.method != "GET":
-        print(f"/rate recieved a {request.method} request when it should have recieved a 'GET' request.")
+        print(f"/rate received a {request.method} request when it should have received a 'GET' request.")
         return error_page()
-    song = request.args.get("song", "")
-    if not song:
-        print(f"/rate needs to recieve a song-id parameter (eg. /rate?song=123)")
+    song_id = request.args.get("song_id", "")
+    if not song_id:
+        print("/rate needs to receive a song_id parameter (eg. /rate?song=123)")
         return error_page()
-    results = query_db.rate_song_page(get_db().cursor(), song)
+    results = query_db.rate_song_page(get_db().cursor(), song_id)
+    print(results[0].song_name)
     if not results:
-        print(f"/rate was unable to find any songs with id '{song}'")
+        print(f"/rate was unable to find any songs with id '{song_id}'")
         return error_page()
-    return render_template("rate.html", song=results)
+    return render_template("rate.html", song_id=song_id, song_name=results[0].song_name, results=results)
 
 
 @app.route("/rate/<song_id>", methods=["POST"])
@@ -73,9 +74,9 @@ def rate(song_id):
     rating_value = int(request.form['rating'])
     comment = request.form['comment']
     if not 1 <= rating_value <= 10:
-        print(f"/rate/ expected the rating to be between 1 and 10, but instead recieved {rating_value}")
+        print(f"/rate/ expected the rating to be between 1 and 10, but instead received {rating_value}")
         return error_page()
-    query_db.rate_song_page(get_db().cursor(), user_id, song_id, rating_value, comment)		
+    query_db.rate_song_page(get_db(), user_id, song_id, rating_value, comment)		
     return redirect("/")
 
 def error_page():

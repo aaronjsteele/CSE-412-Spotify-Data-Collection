@@ -85,23 +85,36 @@ def songs_by_artist(cursor, artist):
     query = cursor.mogrify(unprocessed_query)
     return execute_query_and_return(cursor, query)
 
-def rate_song_page(cursor, song):
+
+def rate_song_page(cursor, song_id):
     unprocessed_query = (
-        f"SELECT song_id as id, song_name as title "\
-        f"FROM song "\
-        f"WHERE song_id='{song}'"
+        f"SELECT song.song_name AS song_name, user_table.display_name AS username, rates.comment AS comment, rates.rating_value AS rating "\
+        f"FROM song, rates, user_table "\
+        f"WHERE song.song_id = rates.song_id "\
+        f"    AND rates.user_id = user_table.user_id "\
+        f"    AND song.song_id = %s"
     )
-    query = cursor.mogrify(unprocessed_query)
+    query = cursor.mogrify(unprocessed_query, (song_id,))
     return execute_query_and_return(cursor, query)
 
-def rate(cursor, user_id, song_id, rating_value, comment):
+def get_song_info(cursor, song_id):
+    unprocessed_query = (
+        f"SELECT song.song_name AS song_name, "
+        f"FROM song, album, artist, is_in, performed_by "
+    )
+
+# NOTE: FOR ANY COMMAND TO COMMIT DATA TO THE DATABASE, WE MUST
+#       PASS THE CONNECTION, NOT THE CURSOR
+def rate(connection, user_id, song_id, rating_value, comment):
+    cursor = connection.cursor()
     unprocessed_query = (
         f"INSERT INTO rates (user_id, song_id, rating_value, comment) "\
-        f"VALUES ('{user_id}', '{song_id}', '{rating_value}', '{comment}') "\
+        f"VALUES (%s, %s, %s, %s) "\
         f"ON CONFLICT DO NOTHING"
     )
-    query = cursor.mogrify(unprocessed_query)
+    query = cursor.mogrify(unprocessed_query, (user_id, song_id, rating_value, comment))
     cursor.execute(query)
+    connection.commit()
 
 def execute_query_and_return(cursor, query):
     cursor.execute(query)
@@ -123,14 +136,14 @@ def sort_by_parser(sort_by_type):
 
 def format_like_query(input_str):
     return '%' + input_str + '%'
-
+"""
 def get_song_details(cursor, song_id):
     unprocessed_query = 
-
+"""
 class DotDict(dict):
-	def __getattr__(self, key):
-		if key not in self:
-			print(f"There was an error while trying to access '{key}' from {self}")
-			return "Database Error"
-		else:
-			return self[key]
+    def __getattr__(self, key):
+        if key not in self:
+            print(f"There was an error while trying to access '{key}' from {self}")
+            return "Database Error"
+        else:
+            return self[key]
