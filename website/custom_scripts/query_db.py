@@ -248,6 +248,8 @@ def sort_by_parser(sort_by_type):
         string = "album_name"
     elif sort_by_type == "popularity":
         string = "popularity DESC"
+    elif sort_by_type == "ratings":
+        string = "avg_table.avg_rating DESC"
     return string
 
 def format_like_query(input_str):
