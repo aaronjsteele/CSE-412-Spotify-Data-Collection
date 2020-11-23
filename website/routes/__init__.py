@@ -30,20 +30,25 @@ def main_page():
 
 @app.route("/artist", methods=["GET"])
 def artist_page():
-    artist = request.args.get("artist", None)
-    if not artist:
+    artist_name = request.args.get("artist_name", None)
+    artist_id = request.args.get("artist_id", None)
+    if not artist_name:
         print(f"/artist needs to receive an 'artist' parameter (eg. /artist?artist=bob)")
         return error_page()
-    top_tracks = query_db.get_artist_top_tracks(get_db().cursor(), artist)
-    genres = query_db.get_artist_genres(get_db().cursor(), artist)
-    related_artists = query_db.get_related_artists(get_db().cursor(), artist)
-    albums = query_db.get_artist_albums(get_db().cursor(), artist)
-    print(albums)
+    top_tracks = query_db.get_artist_top_tracks(get_db().cursor(), artist_id)
+    genres = query_db.get_artist_genres(get_db().cursor(), artist_id)
+    related_artists = query_db.get_related_artists(get_db().cursor(), artist_id)
+    albums = query_db.get_artist_albums(get_db().cursor(), artist_id)
+    songs_in_album = {}
+    for i in range(len(albums)):
+        songs_in_album[albums[i]['album_id']] = query_db.get_songs_in_album(get_db().cursor(), albums[i]['album_id'])
     return render_template("artist.html", 
-                            artist_name=artist,
+                            artist_name=artist_name,
+                            artist_id=artist_id,
                             genres=genres,
                             top_tracks=top_tracks,
                             albums=albums,
+                            songs_in_album=songs_in_album,
                             related_artists=related_artists)
 
 @app.route("/rate", methods=["GET", "POST"])
@@ -72,7 +77,7 @@ def rate_song_page():
                                 total_listens=query_db.get_total_listens(get_db().cursor(), song_id),
                                 song=query_db.get_song_info(get_db().cursor(), song_id)[0],
                                 listened_to_song=query_db.check_if_listened(get_db().cursor(), user_id, song_id),
-                                other_details=query_db.get_other_song_details(get_db().cursor(), song_id),
+                                other_details=query_db.get_song_details(get_db().cursor(), song_id),
                                 results=results)
 
     elif request.method == "POST":
@@ -110,7 +115,7 @@ def rate_song_page():
                                 total_listens=query_db.get_total_listens(get_db().cursor(), song_id),
                                 song=query_db.get_song_info(get_db().cursor(), song_id)[0],
                                 listened_to_song=query_db.check_if_listened(get_db().cursor(), user_id, song_id),
-                                other_details=query_db.get_other_song_details(get_db().cursor(), song_id),
+                                other_details=query_db.get_song_details(get_db().cursor(), song_id),
                                 results=results)
     else:
         print(f"/rate received a {request.method} request when it should have received a 'GET' or 'POST' request.")

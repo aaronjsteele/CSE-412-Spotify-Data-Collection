@@ -24,12 +24,22 @@
         <h4><b>Albums:</b></h4>
         {% for album in albums %}
         <ul class="list-group">
-            <li class="list-group-item">
+            <button type="btn btn-link" class="list-group-item list-group-item-action" data-toggle="collapse"
+                data-target="#collapse_songs-{{loop.index}}" aria-expanded="false" aria-controls="collapse_songs">
                 {{album.album}}
                 {% if "appears_on" in album.album_group %}
-                    <i> (featured) </i>
+                <i> (featured) </i>
                 {% endif %}
-            </li>
+            </button>
+            <div id="collapse_songs-{{loop.index}}" class="collapse">
+                <ul class="list-group">
+                    {% for song in songs_in_album[album.album_id] %}
+                    <li class="list-group-item">
+                        <i><a href="/rate?song_id={{song.song_id}}">{{song.song}}</a></i>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
         </ul>
         {% endfor %}
     </div>
@@ -38,12 +48,12 @@
         {% for artist in related_artists %}
         <ul class="list-group">
             <li class="list-group-item">
-                <i><a href="/artist?artist={{artist.artist}}">{{artist.artist}}</a></i>
+                {% set artist_address = "/artist?artist_id=" + artist.artist_id.strip() + "&artist_name=" + artist.artist.strip() %}
+                <i><a href="{{artist_address}}">{{artist.artist}}</a></i>
             </li>
         </ul>
         {% endfor %}
     </div>
 </div>
-
 
 {% endblock %}

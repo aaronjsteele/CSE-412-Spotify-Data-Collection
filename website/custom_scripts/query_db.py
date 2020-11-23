@@ -74,53 +74,64 @@ def search_by(cursor, input_str, query_type, sort_by_type):
     return execute_query_and_return(cursor, query)
 
 def get_artist_top_tracks(cursor, artist):
-    """List the top tracks of an artist given the artist name"""
+    """List the top tracks of an artist given the artist id"""
     unprocessed_query = ( 
         f"SELECT song_name AS song, song.song_id "\
         f"FROM artist, song, performed_by "\
         f"WHERE song.song_id = performed_by.song_id "\
         f"    AND performed_by.artist_id = artist.artist_id "\
         f"    AND is_top_track = true "\
-        f"    AND artist.artist_id = artist.artist_id "\
-        f"    AND artist_name = %s" 
+        f"    AND artist.artist_id = %s" 
     )
     query = cursor.mogrify(unprocessed_query, (artist,))
     return execute_query_and_return(cursor, query)
 
 def get_artist_genres(cursor, artist):
-    """List all the genres associated with an artist given the artist name"""
+    """List all the genres associated with an artist given the artist id"""
     unprocessed_query = (
         f"SELECT genre_name AS genre "\
         f"FROM artist, is_genre "\
         f"WHERE is_genre.artist_id = artist.artist_id "\
-        f"    AND artist_name = %s"
+        f"    AND artist.artist_id = %s"
     )
     query = cursor.mogrify(unprocessed_query, (artist,))
     return execute_query_and_return(cursor, query)
 
 def get_related_artists(cursor, artist):
-    """List all the related artists given an artist name"""
+    """List all the related artists given an artist id"""
     unprocessed_query = (
-        f"SELECT other_artists.artist_name AS artist "\
-        f"FROM artist AS the_artist, artist AS other_artists, related_artists "\
-        f"WHERE the_artist.artist_name = %s "\
-        f"    AND the_artist.artist_id = artist_id_1 "\
-        f"    AND other_artists.artist_id = artist_id_2"\
+        f"SELECT artist_name AS artist, artist_id "\
+        f"FROM artist, related_artists "\
+        f"WHERE %s = artist_id_1 "\
+        f"    AND artist_id = artist_id_2"\
     )
     query = cursor.mogrify(unprocessed_query, (artist,))
     return execute_query_and_return(cursor, query)
 
 def get_artist_albums(cursor, artist):
-    """List all the albums the artist is apart of give an artist name"""
+    """List all the albums the artist is apart of give an artist id"""
     unprocessed_query = (
-        f"SELECT album.album_name AS album, album_group "\
+        f"SELECT album_name AS album, album.album_id AS album_id, album_group "\
         f"FROM artist, album, participates_in "\
-        f"WHERE artist.artist_name = %s "\
+        f"WHERE artist.artist_id = %s "\
         f"    AND artist.artist_id = participates_in.artist_id "\
         f"    AND album.album_id = participates_in.album_id "
     )
     query = cursor.mogrify(unprocessed_query, (artist,))
     return execute_query_and_return(cursor, query)
+
+def get_songs_in_album(cursor, album):
+    """List all songs in an album give an album id"""
+    unprocessed_query = (
+        f"SELECT song_name AS song, song.song_id AS song_id "\
+        f"FROM song, album, is_in "\
+        f"WHERE album.album_id = %s "\
+        f"    AND song.song_id = is_in.song_id "\
+        f"    AND album.album_id = is_in.album_id "
+    )
+    query = cursor.mogrify(unprocessed_query, (album,))
+    return execute_query_and_return(cursor, query)
+
 
 def rate_song_page(cursor, song_id):
     """List all ratings given to a song with a certain id"""
@@ -321,7 +332,7 @@ def add_listen(connection, user_id, song_id):
 #   2. Length of the song
 #   3. Popularity
 #   4. List of countries song is available in
-def get_other_song_details(cursor, song_id):
+def get_song_details(cursor, song_id):
     unprocessed_query = (
         f"SELECT is_explicit, duration, popularity "\
         f"FROM song "\
