@@ -116,6 +116,7 @@ def get_artist_albums(cursor, artist):
         f"WHERE artist.artist_id = %s "\
         f"    AND artist.artist_id = participates_in.artist_id "\
         f"    AND album.album_id = participates_in.album_id "
+        f"    AND participates_in.album_group = 'album'"
     )
     query = cursor.mogrify(unprocessed_query, (artist,))
     return execute_query_and_return(cursor, query)
@@ -361,7 +362,6 @@ def get_countries(cursor, song_id):
         output += entry[0].strip()
         if results.index(entry) != results_len:
             output += ", "
-    print(output)
     return output
 
 def convert_to_time(millis):

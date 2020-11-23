@@ -1,80 +1,45 @@
 <form method="POST" action="/">
-  <div class="form-row">
-    <div class="form-group col-md-8">
-      <input
-        type="text"
-        class="form-control"
-        id="inputStringField"
-        name="inputString"
-        value="{{prev[0]}}"
-        placeholder="Enter search term"
-      />
+    <div class="form-row">
+        <div class="form-group col-md-9">
+            <input type="text" class="form-control" id="inputStringField" name="inputString" value="{{prev[0]}}"
+                placeholder="Enter search term" />
+        </div>
+        <div class="form-group col-md-2">
+            <select id="inputQueryDropdown" name="inputQuery" class="form-control" value={{prev[1]}}>
+                <option value="artist">Artist</option>
+                <option value="song">Song</option>
+                <option value="album">Album</option>
+                <option value="genre">Genre</option>
+                <option value="country">Country</option>
+            </select>
+        </div>
+        <div class="from-group col-auto">
+            <button type="submit" class="btn btn-success mb-2">Submit</button>
+        </div>
     </div>
-    <div class="form-group col-md-2">
-      <select id="inputQueryDropdown" name="inputQuery" class="form-control">
-        <option value="artist">Artist</option>
-        <option value="song">Song</option>
-        <option value="album">Album</option>
-        <option value="genre">Genre</option>
-        <option value="country">Country</option>
-      </select>
+    <div class="row">
+        <legend class="col-form-label col-sm-1 pt-0">Sort by:</legend>
+        <div class="form-check form-check-inline col-sm-1">
+
+            <input class="form-check-input" type="radio" name="sortby" id="titleRadio" value="title" checked />
+            <label class="form-check-label" for="titleRadio">Title</label>
+        </div>
+        <div class="form-check form-check-inline col-sm-1">
+            <input class="form-check-input" type="radio" name="sortby" id="artistRadio" value="artist" />
+            <label class="form-check-label" for="artistRadio">Artist</label>
+        </div>
+        <div class="form-check form-check-inline col-sm-1">
+            <input class="form-check-input" type="radio" name="sortby" id="albumRadio" value="album" />
+            <label class="form-check-label" for="albumRadio">Album</label>
+        </div>
+        <div class="form-check form-check-inline col-sm-1">
+            <input class="form-check-input" type="radio" name="sortby" id="popularityRadio" value="popularity" />
+            <label class="form-check-label" for="popularityRadio">Popularity</label>
+        </div>
+        <div class="form-check form-check-inline col-sm-1">
+            <input class="form-check-input" type="radio" name="sortby" id="ratingsRadio" value="ratings" />
+            <label class="form-check-label" for="ratingsRadio">Ratings</label>
+        </div>
     </div>
-    <div class="col-auto">
-      <button type="submit" class="btn btn-success mb-2">Submit</button>
-    </div>
-  </div>
-  <div class="row">
-    <legend class="col-form-label col-sm-1 pt-0">Sort by:</legend>
-    <div class="form-check form-check-inline col-sm-1">
-      <input
-        class="form-check-input"
-        type="radio"
-        name="sortby"
-        id="titleRadio"
-        value="title"
-        checked="checked"
-      />
-      <label class="form-check-label" for="titleRadio">Title</label>
-    </div>
-    <div class="form-check form-check-inline col-sm-1">
-      <input
-        class="form-check-input"
-        type="radio"
-        name="sortby"
-        id="artistRadio"
-        value="artist"
-      />
-      <label class="form-check-label" for="artistRadio">Artist</label>
-    </div>
-    <div class="form-check form-check-inline col-sm-1">
-      <input
-        class="form-check-input"
-        type="radio"
-        name="sortby"
-        id="albumRadio"
-        value="album"
-      />
-      <label class="form-check-label" for="albumRadio">Album</label>
-    </div>
-    <div class="form-check form-check-inline col-sm-1">
-      <input
-        class="form-check-input"
-        type="radio"
-        name="sortby"
-        id="popularityRadio"
-        value="popularity"
-      />
-      <label class="form-check-label" for="popularityRadio">Popularity</label>
-    </div>
-    <div class="form-check form-check-inline col-sm-1">
-      <input
-        class="form-check-input"
-        type="radio"
-        name="sortby"
-        id="ratingsRadio"
-        value="ratings"
-      />
-      <label class="form-check-label" for="ratingsRadio">Ratings</label>
-    </div>
-  </div>
+    <br>
 </form>

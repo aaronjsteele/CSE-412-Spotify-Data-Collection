@@ -1,5 +1,5 @@
 {% extends "base.html" %} {% block content %}
-<h1><i><b>{{artist_name}}</b></i></h1>
+<h1>{{artist_name}}</h1>
 <h4><b>Genres:</b>
     {% for genre in genres %}
     {{genre.genre}}
@@ -15,7 +15,7 @@
         {% for track in top_tracks %}
         <ul class="list-group">
             <li class="list-group-item">
-                <i><a href="/rate?song_id={{track.song_id}}" class="text-muted">{{track.song}}</a></i>
+                <a href="/rate?song_id={{track.song_id}}" class="text-muted">{{track.song}}</a>
             </li>
         </ul>
         {% endfor %}
@@ -35,7 +35,7 @@
                 <ul class="list-group">
                     {% for song in songs_in_album[album.album_id] %}
                     <li class="list-group-item">
-                        <i><a href="/rate?song_id={{song.song_id}}">{{song.song}}</a></i>
+                        <a href="/rate?song_id={{song.song_id}}" class="text-muted">{{song.song}}</a>
                     </li>
                     {% endfor %}
                 </ul>
@@ -49,7 +49,7 @@
         <ul class="list-group">
             <li class="list-group-item">
                 {% set artist_address = "/artist?artist_id=" + artist.artist_id.strip() + "&artist_name=" + artist.artist.strip() %}
-                <i><a href="{{artist_address}}" class="text-muted">{{artist.artist}} </a></i>
+                <a href="{{artist_address}}" class="text-muted">{{artist.artist}} </a>
             </li>
         </ul>
         {% endfor %}
