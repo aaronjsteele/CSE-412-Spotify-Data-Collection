@@ -15,7 +15,7 @@
         {% for track in top_tracks %}
         <ul class="list-group">
             <li class="list-group-item">
-                <i><a href="/rate?song_id={{track.song_id}}">{{track.song}}</a></i>
+                <i><a href="/rate?song_id={{track.song_id}}" class="text-muted">{{track.song}}</a></i>
             </li>
         </ul>
         {% endfor %}
@@ -38,7 +38,7 @@
         {% for artist in related_artists %}
         <ul class="list-group">
             <li class="list-group-item">
-                <i><a href="/artist?artist={{artist.artist}}">{{artist.artist}}</a></i>
+                <i><a href="/artist?artist={{artist.artist}}" class="text-muted">{{artist.artist}}</a></i>
             </li>
         </ul>
         {% endfor %}
