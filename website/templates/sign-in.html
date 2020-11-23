@@ -1,27 +1,38 @@
 {% extends "base.html" %} {% block content %}
-<h1>Sign in or Create an Account</h1>
-</br>
+<div class="form-group">&nbsp;</div>
+<h1 class="display-4 mb-4">Sign in or Create an Account</h1>
+
 <form method="POST" action="/sign-in">
-<div class="form-row">
-  <div class="form-group col-md-1">
-	  <label for="username">Username:</label>
+  <div class="form-row">
+    <div class="form-group col-md-1">
+      <label for="username">Username:</label>
+    </div>
+    <div class="form-group col-md-4">
+      <input class="form-control" type="text" id="username" name="username" placeholder="Enter username here"/>
+    </div>
   </div>
-  <div class="form-group col-md-4">
-    <input class="form-control" type="text" id="username" name="username">
+  <div class="form-row">
+    <div class="form-group col-md-1">
+      <label for="username">Password:</label>
+    </div>
+    <div class="form-group col-md-4">
+      <input
+        class="form-control"
+        type="password"
+        id="password"
+        name="password"
+        placeholder="Enter password here"
+      />
+    </div>
   </div>
-</div>
-<div class="form-row">
-  <div class="form-group col-md-1">
-    <label for="username">Password:</label>
+  <div class="form-row">
+    <input
+      type="submit"
+      value="Sign in or Create Account"
+      class="btn btn-success mt-1"
+    />
   </div>
-  <div class="form-group col-md-4">
-    <input class="form-control" type="password" id="password" name="password">
-  </div>
-</div>
-<div class="form-row">
-  <input type="submit" value="Sign in or Create Account" class="btn btn-success">
-</div>
-<input type="hidden" id="redirect" name="redirect" value="{{redirect}}">
+  <input type="hidden" id="redirect" name="redirect" value="{{redirect}}" />
 </form>
 
 {% endblock %}

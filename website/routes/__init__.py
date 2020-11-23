@@ -78,7 +78,8 @@ def rate_song_page():
                                 song=query_db.get_song_info(get_db().cursor(), song_id)[0],
                                 listened_to_song=query_db.check_if_listened(get_db().cursor(), user_id, song_id),
                                 other_details=query_db.get_song_details(get_db().cursor(), song_id),
-                                results=results)
+                                results=results,
+                                a="1234")
 
     elif request.method == "POST":
         user_id = request.cookies.get('user_id')
