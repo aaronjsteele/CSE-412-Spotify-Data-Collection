@@ -11,39 +11,37 @@
 
 <div class="row">
     <div class="col-4">
-        <h4><b>Top Tracks:</b>
+        <h4><b>Top Tracks:</b></h4>
+        {% for track in top_tracks %}
         <ul class="list-group">
             <li class="list-group-item">
-                {% for track in top_tracks %}
-                    <p><i><a href="/rate?song_id={{track.song_id}}">{{track.song}}</a></i></p>
-                {% endfor %}
+                <i><a href="/rate?song_id={{track.song_id}}">{{track.song}}</a></i>
             </li>
         </ul>
+        {% endfor %}
     </div>
     <div class="col-4">
-        <h4><b>Albums:</b>
+        <h4><b>Albums:</b></h4>
+        {% for album in albums %}
         <ul class="list-group">
             <li class="list-group-item">
-                {% for album in albums %}
-                    <p>
-                        {{album.album}}
-                        {% if "appears_on" in album.album_group %}
-                            <i> (featured) </i>
-                        {% endif %}
-                    </p>
-                {% endfor %}
+                {{album.album}}
+                {% if "appears_on" in album.album_group %}
+                    <i> (featured) </i>
+                {% endif %}
             </li>
         </ul>
+        {% endfor %}
     </div>
     <div class="col-4">
-        <h4><b>Related Artists:</b>
+        <h4><b>Related Artists:</b></h4>
+        {% for artist in related_artists %}
         <ul class="list-group">
             <li class="list-group-item">
-                {% for artist in related_artists %}
-                    <p><i><a href="/artist?artist={{artist.artist}}">{{artist.artist}}</a></i></p>
-                {% endfor %}
+                <i><a href="/artist?artist={{artist.artist}}">{{artist.artist}}</a></i>
             </li>
         </ul>
+        {% endfor %}
     </div>
 </div>
 
