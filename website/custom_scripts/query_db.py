@@ -145,7 +145,7 @@ def rate_song_page(cursor, song_id):
 # Is done, gets song details
 def get_song_info(cursor, song_id):
     unprocessed_query = (
-        f"SELECT song.song_name AS song_name, artist.artist_name AS artist_name, album.album_name AS album_name "\
+        f"SELECT song.song_name AS song_name, artist.artist_name AS artist_name, artist.artist_id AS artist_id, album.album_name AS album_name "\
         f"FROM song, album, artist, is_in, performed_by "\
         f"WHERE song.song_id = performed_by.song_id "\
         f"  AND performed_by.artist_id = artist.artist_id "\

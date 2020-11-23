@@ -1,6 +1,8 @@
 {% extends "base.html" %} {% block content %}
-<h1 class="display-3"><i><b>{{song.song_name}}</b></i></h1>
-<h4><b>Artist:</b> {{song.artist_name}}</h4>
+<div class="form-group">&nbsp;</div>
+
+<h1 class="display-4"><i><b>{{song.song_name}}</b></i></h1>
+<h4><b>Artist:</b> <a href="/artist?artist={{song.artist_name}}" class="text-muted">{{song.artist_name}}</a></h4>
 <h4><b>Album:</b> {{song.album_name}}</h4>
 <h4><b>Rating:</b> {{avg_rating}}/10</h4>
 <h4><b>Total Listens:</b> {{total_listens}}</h4>

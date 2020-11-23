@@ -1,21 +1,20 @@
 {% extends "base.html" %} {% block content %}
 <h1>Search for Songs:</h1>
 
-{% include "searchbar.html" %}
-
-{% if songs %}
+{% include "searchbar.html" %} {% if songs %}
 <div class="container">
   <div class="list-group">
-    {% for song in songs %}
-    {% set call_string = 'redirect_song(\"' ~ song.song_id.strip() ~ '\")' %}
-    <button type="button" class="list-group-item list-group-item-action" onclick={{call_string}}>
+    {% for song in songs %} {% set call_string = 'redirect_song(\"' ~ song.song_id.strip() ~ '\")' %}
+    <button
+      type="button"
+      class="list-group-item list-group-item-action"
+      onclick="{{call_string}}"
+    >
       <div class="row">
         <div class="col-8">
           <b>{{song.title}}</b> by
-          <i
-            ><a href="/artist?artist={{song.artist}}"
-              >{{song.artist}}</a
-            ></i
+          <a href="/artist?artist={{song.artist}}" class="text-muted"
+            >{{song.artist}}</a
           >
           in <b>{{song.album}}</b>
         </div>
@@ -28,12 +27,11 @@
 </div>
 
 <script>
-  function redirect_song(input_id)
-  {
-    var loc = "/rate?song_id="
-    loc = loc.concat(input_id)  
+  function redirect_song(input_id) {
+    var loc = "/rate?song_id=";
+    loc = loc.concat(input_id);
     location.href = loc;
-  } 
+  }
 </script>
 
 {% endif %} {% endblock %}

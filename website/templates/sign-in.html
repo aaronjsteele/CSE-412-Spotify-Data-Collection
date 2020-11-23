@@ -1,12 +1,22 @@
 {% extends "base.html" %} {% block content %}
-<h1>Sign in or Create an Account</h1>
+<div class="form-group">&nbsp;</div>
+
+<h1 class="display-4 mb-4">Sign in or Create an Account</h1>
 
 <form method="POST" action="/sign-in">
-  <label for="username">Username:</label></br>
-  <input type="text" id="username" name="username"></br>
-  <label for="pass">Password:</label></br>
-  <input type="password" id="password" name="password"></br>
-  <input type="submit" value="Sign in or Create Account">
+  <div class="form-row">
+    <div class="form-group">
+      <label for="username">Username:</label>
+      <input type="text" class="form-control" placeholder="Enter username here" id="username" name="username"/>
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <label for="password">Password:</label>
+      <input type="text" class="form-control" placeholder="Enter password here" id="password" name="password"/>
+    </div>
+  </div>
+  <button type="submit" class="btn btn-success mt-2">Sign in or Create Account</button>
 </form>
 
 {% endblock %}
