@@ -31,5 +31,8 @@
     location.href = loc;
   }
 </script>
-
+{% elif prev %}
+<div>
+  No results were found with {{prev[1]}} named '{{prev[0]}}'.
+</div>
 {% endif %} {% endblock %}
