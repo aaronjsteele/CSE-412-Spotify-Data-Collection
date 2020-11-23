@@ -51,23 +51,18 @@ def rate_song_page():
     if request.method == "GET":
         user_id = request.cookies.get('user_id')
         username = request.cookies.get('username')
-        if not user_id or not username:
-            print(f"You need to log in before rating any songs")
-            return redirect("/sign-in")
         song_id = request.args.get("song_id", "")
         if not song_id:
             print("/rate needs to receive a song_id parameter (eg. /rate?song=123)")
             return error_page()
         results = query_db.rate_song_page(get_db().cursor(), song_id)
-      
+
         listened_to = request.args.get("listened_to", "")
-        print(listened_to)
         if listened_to == '1':
             print("entered if")
             # Logic for ADDING the listened_to relationship
             query_db.add_listen(get_db(), user_id, song_id)
 
-        print(results[0].song_name)
         if not results:
             print(f"/rate was unable to find any songs with id '{song_id}'")
             return error_page()
@@ -125,13 +120,14 @@ def rate_song_page():
 @app.route("/sign-in", methods=["GET", "POST"])
 def log_in():
     if request.method == "GET":
-        return render_template("sign-in.html")
+        return render_template("sign-in.html", redirect=request.referrer)
     else:
         username = request.form['username']
         password = request.form['password']
+        redirect_to = request.form['redirect']
         print("We currently are not actually using password information.")
         user_id = query_db.get_user_id(get_db(), username)
-        page = make_response(redirect("/"))
+        page = make_response(redirect(redirect_to))
         # FUCK
         page.set_cookie('user_id', user_id)
         page.set_cookie('username', username)
