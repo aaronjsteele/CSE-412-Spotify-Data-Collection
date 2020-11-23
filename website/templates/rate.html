@@ -30,39 +30,45 @@
 
 <div class="form-group">&nbsp;</div>
 
-<label for="rating_submission" style="font-size: 24px"><b>Leave a Rating as {{request.cookies.get('username')}}:</b></label>
-{% set destination_address = '/rate?song_id=' + song_id %}
-<form method="POST" action={{destination_address}} id="rating_submission">
-  <div class="form-group">
-    <label for="comment_box">Comment:</label>
-    <textarea
-      class="form-control"
-      rows="5"
-      id="comment_box"
-      placeholder="Enter your comment here."
-      name="comment"
-      required
-    ></textarea>
-  </div>
-  <div class="form row">
-    <div class="form-group col-4">
-      <label for="post_rating">Rating:</label>
-      <input
-        type="number"
+{% if request.cookies.get('user_id') %}
+  <label for="rating_submission" style="font-size: 24px"><b>Leave a Rating as {{request.cookies.get('username')}}:</b></label>
+  {% set destination_address = '/rate?song_id=' + song_id %}
+  <form method="POST" action={{destination_address}} id="rating_submission">
+    <div class="form-group">
+      <label for="comment_box">Comment:</label>
+      <textarea
         class="form-control"
-        id="post_rating"
-        min="1"
-        max="10"
-        step="1"
-        placeholder="5"
-        name="rating"
+        rows="5"
+        id="comment_box"
+        placeholder="Enter your comment here."
+        name="comment"
         required
-      />
+      ></textarea>
     </div>
-  </div>
-  <button type="submit" class="btn btn-success">Submit</button>
-  <input type="hidden" name="song_id" value="{{song_id}}">
-</form>
+    <div class="form row">
+      <div class="form-group col-4">
+        <label for="post_rating">Rating:</label>
+        <input
+          type="number"
+          class="form-control"
+          id="post_rating"
+          min="1"
+          max="10"
+          step="1"
+          placeholder="5"
+          name="rating"
+          required
+        />
+      </div>
+    </div>
+    <button type="submit" class="btn btn-success">Submit</button>
+    <input type="hidden" name="song_id" value="{{song_id}}">
+  </form>
+{% else %}
+  <a href="/sign-in">
+    <button class="btn btn-success">Log in to comment</button>
+  </a>
+{% endif %}
 
 <div class="form-group">&nbsp;</div>
 
