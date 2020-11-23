@@ -81,27 +81,25 @@
 </form>
 
 {% if songs %}
-<div class="container">
-  <div class="list-group">
-    {% for song in songs %}
-    {% set call_string = 'redirect_song(\"' ~ song.song_id.strip() ~ '\")' %}
-    <button type="button" class="list-group-item list-group-item-action" onclick={{call_string}}>
-      <div class="row">
-        <div class="col-8">
-          <b>{{song.title}}</b> by
-          <i
-            ><a href="/artist?artist={{song.artist}}"
-              >{{song.artist}}</a
-            ></i
-          >
-          in <b>{{song.album}}</b>
-        </div>
-        <div class="col-2">Rating: {{song.average}}</div>
-        <div class="col-2">Listens: {{song.num_listens}}</div>
+<div class="list-group">
+  {% for song in songs %}
+  {% set call_string = 'redirect_song(\"' ~ song.song_id.strip() ~ '\")' %}
+  <button type="button" class="list-group-item list-group-item-action" onclick={{call_string}}>
+    <div class="row">
+      <div class="col-8">
+        <b>{{song.title}}</b> by
+        <i
+          ><a href="/artist?artist={{song.artist}}"
+            >{{song.artist}}</a
+          ></i
+        >
+        in <b>{{song.album}}</b>
       </div>
-    </button>
-    {% endfor %}
-  </div>
+      <div class="col-2">Rating: {{song.average}}</div>
+      <div class="col-2">Listens: {{song.num_listens}}</div>
+    </div>
+  </button>
+  {% endfor %}
 </div>
 
 <script>
