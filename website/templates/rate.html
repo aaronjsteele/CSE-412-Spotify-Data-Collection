@@ -1,15 +1,15 @@
 {% extends "base.html" %} {% block content %}
 <h1 class="display-3"><i><b>{{song.song_name}}</b></i></h1>
-<h4><b>Artist:</b> {{song.artist_name}}</h4>
+<h4><b>Artist:</b> <a href="/artist?artist={{song.artist_name}}">{{song.artist_name}}</a></h4>
 <h4><b>Album:</b> {{song.album_name}}</h4>
 <h4><b>Rating:</b> {{avg_rating}}/10</h4>
 <h4><b>Total Listens:</b> {{total_listens}}</h4>
 
 {% if listened_to_song %}
-<button type="button" class="btn btn-secondary active" role="button" disabled>Listened to this song!</button>
-{% else %}
-{% set listened_destination_address = '/rate?song_id=' + song_id + '&listened_to=1' %}
-<a href={{listened_destination_address}} type="button" class="btn btn-outline-secondary" role="button">Listened to this song!</a>
+  <button type="button" class="btn btn-secondary active" role="button" disabled>Listened to this song!</button>
+{% elif request.cookies.get('user_id') %}
+  {% set listened_destination_address = '/rate?song_id=' + song_id + '&listened_to=1' %}
+  <a href={{listened_destination_address}} type="button" class="btn btn-outline-secondary" role="button">Listened to this song!</a>
 {% endif %}
 
 <p>
@@ -66,7 +66,7 @@
   </form>
 {% else %}
   <a href="/sign-in">
-    <button class="btn btn-success">Log in to comment</button>
+    <button class="btn btn-success">Log in to comment and listen</button>
   </a>
 {% endif %}
 
