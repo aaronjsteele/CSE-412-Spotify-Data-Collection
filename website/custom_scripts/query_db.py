@@ -1,6 +1,7 @@
 import psycopg2
 import random
 import string
+import sys
 
 def init_db_connection():
     """Initiates connection to DB server, returns a connection"""
@@ -20,8 +21,9 @@ def list_all(cursor, sort_by_type):
     sort_by_type: how to sort the results, must be supported by 'sort_by_parser'
     """
     sort_by_str = sort_by_parser(sort_by_type)
+    print(sort_by_str, file=sys.stderr)
     unprocessed_query = (
-        f"SELECT DISTINCT song_name AS title, artist_name AS artist, album_name AS album, avg_table.avg_rating AS average, count_table.total AS num_listens, song.song_id AS song_id, popularity "\
+        f"SELECT DISTINCT song_name AS title, artist_name AS artist, album_name AS album, avg_table.avg_rating AS average, count_table.total AS num_listens, song.song_id AS song_id, artist.artist_id AS artist_id, popularity "\
         f"FROM song, artist, performed_by, album, is_in, "\
         f"    ( "\
         f"        SELECT song.song_id, ROUND(AVG(rates.rating_value),2) AS avg_rating "\
@@ -56,7 +58,7 @@ def search_by(cursor, input_str, query_type, sort_by_type):
     sort_by_str = sort_by_parser(sort_by_type)
     query_type_str = query_type_parser(query_type)
     unprocessed_query = (
-        f"SELECT DISTINCT song_name AS title, artist_name AS artist, album_name AS album, avg_table.avg_rating AS average, count_table.total AS num_listens, song.song_id AS song_id, popularity "\
+        f"SELECT DISTINCT song_name AS title, artist_name AS artist, album_name AS album, avg_table.avg_rating AS average, count_table.total AS num_listens, song.song_id AS song_id, artist.artist_id AS artist_id, popularity "\
         f"FROM song, artist, performed_by, album, is_in, is_genre, "\
         f"    ( "\
         f"        SELECT song.song_id, ROUND(AVG(rates.rating_value),2) AS avg_rating "\
@@ -83,17 +85,50 @@ def search_by(cursor, input_str, query_type, sort_by_type):
     query = cursor.mogrify(unprocessed_query, (format_like_query(input_str),))
     return execute_query_and_return(cursor, query)
 
-def songs_by_artist(cursor, artist):
-    """List all songs by the artist with the given name"""
-    unprocessed_query = (
-        f"SELECT DISTINCT song_name as title, artist_name as artist FROM song, performed_by, artist "\
+def get_artist_top_tracks(cursor, artist):
+    unprocessed_query = ( 
+        f"SELECT song_name AS song, song.song_id "\
+        f"FROM artist, song, performed_by "\
         f"WHERE song.song_id = performed_by.song_id "\
-        f"AND performed_by.artist_id = artist.artist_id "\
-        f"AND artist_name = %s"
+        f"    AND performed_by.artist_id = artist.artist_id "\
+        f"    AND is_top_track = true "\
+        f"    AND artist.artist_id = artist.artist_id "\
+        f"    AND artist_name = %s" 
     )
     query = cursor.mogrify(unprocessed_query, (artist,))
     return execute_query_and_return(cursor, query)
 
+def get_artist_genres(cursor, artist):
+    unprocessed_query = (
+        f"SELECT genre_name AS genre "\
+        f"FROM artist, is_genre "\
+        f"WHERE is_genre.artist_id = artist.artist_id "\
+        f"    AND artist_name = %s"
+    )
+    query = cursor.mogrify(unprocessed_query, (artist,))
+    return execute_query_and_return(cursor, query)
+
+def get_related_artists(cursor, artist):
+    unprocessed_query = (
+        f"SELECT other_artists.artist_name AS artist "\
+        f"FROM artist AS the_artist, artist AS other_artists, related_artists "\
+        f"WHERE the_artist.artist_name = %s "\
+        f"    AND the_artist.artist_id = artist_id_1 "\
+        f"    AND other_artists.artist_id = artist_id_2"\
+    )
+    query = cursor.mogrify(unprocessed_query, (artist,))
+    return execute_query_and_return(cursor, query)
+
+def get_artist_albums(cursor, artist):
+    unprocessed_query = (
+        f"SELECT album.album_name AS album, album_group "\
+        f"FROM artist, album, participates_in "\
+        f"WHERE artist.artist_name = %s "\
+        f"    AND artist.artist_id = participates_in.artist_id "\
+        f"    AND album.album_id = participates_in.album_id "
+    )
+    query = cursor.mogrify(unprocessed_query, (artist,))
+    return execute_query_and_return(cursor, query)
 
 def rate_song_page(cursor, song_id):
     """List all ratings given to a song with a certain id"""

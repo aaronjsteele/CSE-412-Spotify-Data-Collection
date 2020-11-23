@@ -30,11 +30,21 @@ def main_page():
 
 @app.route("/artist", methods=["GET"])
 def artist_page():
-    artist = request.args.get("artist", "")
+    artist = request.args.get("artist", None)
     if not artist:
-        print(f"/songs-by-artist needs to receive an 'artist' parameter (eg. /songs-by-artist?artist=bob)")
+        print(f"/artist needs to receive an 'artist' parameter (eg. /artist?artist=bob)")
         return error_page()
-    return render_template("artist.html", artist_name=artist)
+    top_tracks = query_db.get_artist_top_tracks(get_db().cursor(), artist)
+    genres = query_db.get_artist_genres(get_db().cursor(), artist)
+    related_artists = query_db.get_related_artists(get_db().cursor(), artist)
+    albums = query_db.get_artist_albums(get_db().cursor(), artist)
+    print(albums)
+    return render_template("artist.html", 
+                            artist_name=artist,
+                            genres=genres,
+                            top_tracks=top_tracks,
+                            albums=albums,
+                            related_artists=related_artists)
 
 @app.route("/rate", methods=["GET", "POST"])
 def rate_song_page():
@@ -49,7 +59,7 @@ def rate_song_page():
             print("/rate needs to receive a song_id parameter (eg. /rate?song=123)")
             return error_page()
         results = query_db.rate_song_page(get_db().cursor(), song_id)
-
+      
         listened_to = request.args.get("listened_to", "")
         print(listened_to)
         if listened_to == '1':

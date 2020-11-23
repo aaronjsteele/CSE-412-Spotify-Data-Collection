@@ -1,4 +1,51 @@
 {% extends "base.html" %} {% block content %}
-<h1><b>{{artist_name}}</b></h1>
-  
+<h1><i><b>{{artist_name}}</b></i></h1>
+<h4><b>Genres:</b>
+    {% for genre in genres %}
+    {{genre.genre}}
+    {% if not loop.last %}
+    ,
+    {% endif %}
+    {% endfor %}
+</h4>
+
+<div class="row">
+    <div class="col-4">
+        <h4><b>Top Tracks:</b>
+        <ul class="list-group">
+            <li class="list-group-item">
+                {% for track in top_tracks %}
+                    <p><i><a href="/rate?song_id={{track.song_id}}">{{track.song}}</a></i></p>
+                {% endfor %}
+            </li>
+        </ul>
+    </div>
+    <div class="col-4">
+        <h4><b>Albums:</b>
+        <ul class="list-group">
+            <li class="list-group-item">
+                {% for album in albums %}
+                    <p>
+                        {{album.album}}
+                        {% if "appears_on" in album.album_group %}
+                            <i> (featured) </i>
+                        {% endif %}
+                    </p>
+                {% endfor %}
+            </li>
+        </ul>
+    </div>
+    <div class="col-4">
+        <h4><b>Related Artists:</b>
+        <ul class="list-group">
+            <li class="list-group-item">
+                {% for artist in related_artists %}
+                    <p><i><a href="/artist?artist={{artist.artist}}">{{artist.artist}}</a></i></p>
+                {% endfor %}
+            </li>
+        </ul>
+    </div>
+</div>
+
+
 {% endblock %}
