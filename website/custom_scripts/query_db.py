@@ -18,7 +18,7 @@ def init_db_connection():
 def index_query():
     query = (
         f"SELECT DISTINCT song_name AS title, artist_name AS artist, album_name AS album, avg_table.avg_rating AS average, count_table.total AS num_listens, song.song_id AS song_id, artist.artist_id AS artist_id, popularity "\
-        f"FROM song, artist, performed_by, album, is_in, is_genre, "\
+        f"FROM song, artist, performed_by, album, is_in, is_genre, available_in, "\
         f"    ( "\
         f"        SELECT song.song_id, ROUND(AVG(rates.rating_value),2) AS avg_rating "\
         f"        FROM song, rates "\
@@ -38,6 +38,7 @@ def index_query():
         f"    AND avg_table.song_id = song.song_id "\
         f"    AND count_table.song_id = song.song_id "\
         f"    AND is_genre.artist_id = artist.artist_id "\
+        f"    AND available_in.song_id = song.song_id "
     )
     return query
 
@@ -391,6 +392,8 @@ def query_type_parser(query_type):
         string = f"{query_type}.{query_type}_name"
     elif query_type == "genre":
         string = f"is_genre.genre_name"
+    elif query_type == "country":
+        string = f"available_in.country_name"
     return string
 
 def format_like_query(input_str):
