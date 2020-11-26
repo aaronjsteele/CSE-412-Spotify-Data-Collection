@@ -381,6 +381,8 @@ def sort_by_parser(sort_by_type):
         string = "popularity DESC"
     elif sort_by_type == "ratings":
         string = "avg_table.avg_rating DESC"
+    elif sort_by_type == "listens":
+        string = "count_table.total DESC"
     return string
 
 def query_type_parser(query_type):
