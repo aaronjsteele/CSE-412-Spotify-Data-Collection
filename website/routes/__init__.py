@@ -3,15 +3,16 @@ from flask import render_template, request, g, redirect, make_response
 from website.custom_scripts import *
 
 # NOTE: g is a flask global variable for the current context.
-@app.route("/", methods=["GET", "POST"])
+@app.route("/", methods=["GET"])
 def main_page():
-    if request.method == "GET":
+    if not request.args:
+        # Just the homepage
         return render_template("homepage.html", prev=["", "", ""])
-    elif request.method == "POST":
-        # logic for querying database and return data
-        search_string = request.form['inputString']
-        query_type = request.form['inputQuery']
-        sort_by_type = request.form['sortby']
+    else:
+        # Return song data
+        search_string = request.args['inputString']
+        query_type = request.args['inputQuery']
+        sort_by_type = request.args['sortby']
         prev_query = [search_string, query_type, sort_by_type]
         if search_string == "":
             return render_template(
