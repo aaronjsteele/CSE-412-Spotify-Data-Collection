@@ -1,7 +1,6 @@
 import psycopg2
 import random
 import string
-import sys
 
 def init_db_connection():
     """Initiates connection to DB server, returns a connection"""
@@ -76,13 +75,13 @@ def search_by(cursor, input_str, query_type, sort_by_type):
 
 def get_artist_top_tracks(cursor, artist):
     """List the top tracks of an artist given the artist id"""
-    unprocessed_query = ( 
+    unprocessed_query = (
         f"SELECT song_name AS song, song.song_id "\
         f"FROM artist, song, performed_by "\
         f"WHERE song.song_id = performed_by.song_id "\
         f"    AND performed_by.artist_id = artist.artist_id "\
         f"    AND is_top_track = true "\
-        f"    AND artist.artist_id = %s" 
+        f"    AND artist.artist_id = %s"
     )
     query = cursor.mogrify(unprocessed_query, (artist,))
     return execute_query_and_return(cursor, query)
@@ -324,7 +323,6 @@ def add_listen(connection, user_id, song_id):
     )
     query = cursor.mogrify(unprocessed_query, (user_id, song_id))
     cursor.execute(query)
-    print("added " + user_id + song_id)
     connection.commit()
 
 # Gets details on if a song is explicit, its length,
@@ -344,7 +342,6 @@ def get_song_details(cursor, song_id):
     cursor.execute(query)
     results = cursor.fetchall()
     to_return = [results[0][0], convert_to_time(results[0][1]), results[0][2], get_countries(cursor, song_id)]
-    print(to_return)
     return to_return
 
 def get_countries(cursor, song_id):

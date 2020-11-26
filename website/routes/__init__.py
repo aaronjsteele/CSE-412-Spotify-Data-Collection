@@ -1,7 +1,5 @@
 from website import app
 from flask import render_template, request, g, redirect, make_response
-import os
-import sys
 from website.custom_scripts import *
 
 # NOTE: g is a flask global variable for the current context.
@@ -40,9 +38,10 @@ def artist_page():
     related_artists = query_db.get_related_artists(get_db().cursor(), artist_id)
     albums = query_db.get_artist_albums(get_db().cursor(), artist_id)
     songs_in_album = {}
-    for i in range(len(albums)):
-        songs_in_album[albums[i]['album_id']] = query_db.get_songs_in_album(get_db().cursor(), albums[i]['album_id'])
-    return render_template("artist.html", 
+    for album in albums:
+        songs_in_album[album['album_id']] = query_db.get_songs_in_album(get_db().cursor(), album['album_id'])
+
+    return render_template("artist.html",
                             artist_name=artist_name,
                             artist_id=artist_id,
                             genres=genres,
@@ -64,7 +63,6 @@ def rate_song_page():
 
         listened_to = request.args.get("listened_to", "")
         if listened_to == '1':
-            print("entered if")
             # Logic for ADDING the listened_to relationship
             query_db.add_listen(get_db(), user_id, song_id)
 
@@ -78,8 +76,7 @@ def rate_song_page():
                                 song=query_db.get_song_info(get_db().cursor(), song_id)[0],
                                 listened_to_song=query_db.check_if_listened(get_db().cursor(), user_id, song_id),
                                 other_details=query_db.get_song_details(get_db().cursor(), song_id),
-                                results=results,
-                                a="1234")
+                                results=results)
 
     elif request.method == "POST":
         user_id = request.cookies.get('user_id')
@@ -143,8 +140,8 @@ def log_in():
 def log_out():
     """Deletes the cookies storing user info and returns them to the previous page"""
     page = redirect(request.referrer)
-    page.set_cookie('user_id', "")
-    page.set_cookie('username', "")
+    page.set_cookie('user_id', "", 0)
+    page.set_cookie('username', "", 0)
     return page
 
 def error_page():
