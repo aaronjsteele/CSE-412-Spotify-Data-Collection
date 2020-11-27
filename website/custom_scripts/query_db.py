@@ -17,7 +17,7 @@ def init_db_connection():
 """
 DO NOT DELETE!!!
 
-NOTE: A materialized table was created. In theory, we should be able
+NOTE: A materialized table was created to help speed queries. In theory, we should be able
 to use the materialized views for average rating and the total listens
 on various songs. For reference, the query used to create the materialized
 view for the avg_ratings is:
@@ -194,14 +194,9 @@ def get_songs_in_album(cursor, album):
 
 
 def rate_song_page(cursor, song_id):
-    """List all ratings given to a song with a certain id"""
-    unprocessed_query = (
-        f"SELECT song.song_name AS song_name, user_table.display_name AS username, rates.comment AS comment, rates.rating_value AS rating "\
-        f"FROM song, rates, user_table "\
-        f"WHERE song.song_id = rates.song_id "\
-        f"    AND rates.user_id = user_table.user_id "\
-        f"    AND song.song_id = %s"
-    )
+    """
+    List all ratings given to a song with a certain id
+    """
     unprocessed_query = (
         """
         SELECT
@@ -239,12 +234,17 @@ def get_song_info(cursor, song_id):
     return execute_query_and_return(cursor, query)
 
 def get_countries_available(cursor, song_id):
-    """Find what countries a song is available in from song_id"""
+    """
+    Find what countries a song is available in from song_id
+    """
     unprocessed_query = (
-        f"SELECT available_in.country_name AS country_name "\
-        f"FROM song, available_in "\
-        f"WHERE song.song_id = available_in.song_id "\
-        f"  AND song.song_id = %s"
+        """
+        SELECT
+            available_in.country_name AS country_name
+        FROM song
+            INNER JOIN available_in ON song.song_id = available_in.song_id
+        WHERE song.song_id = %s
+        """
     )
     query = cursor.mogrify(unprocessed_query, (song_id,))
     return execute_query_and_return(cursor, query)
@@ -257,9 +257,11 @@ def get_user_id(connection, username):
     """
     cursor = connection.cursor()
     unprocessed_query = (
-        f"SELECT user_id "\
-        f"FROM user_table "\
-        f"WHERE display_name = %s"
+        """
+        SELECT user_id
+        FROM user_table
+        WHERE display_name = %s
+        """
     )
     query = cursor.mogrify(unprocessed_query, (username,))
     cursor.execute(query)
@@ -279,23 +281,31 @@ def get_user_id(connection, username):
         return results[0][0].strip()
 
 def insert_new_user(connection, user_id, username):
-    """Create a new entry in the user database"""
+    """
+    Create a new entry in the user database
+    """
     cursor = connection.cursor()
     unprocessed_query = (
-        f"INSERT INTO user_table (user_id, display_name) "\
-        f"VALUES (%s, %s) "\
-        f"ON CONFLICT DO NOTHING"
+        """
+        INSERT INTO user_table (user_id, display_name)
+        VALUES (%s, %s)
+        ON CONFLICT DO NOTHING
+        """
     )
     query = cursor.mogrify(unprocessed_query, (user_id, username))
     cursor.execute(query)
     connection.commit()
 
 def check_if_user_id_exists(cursor, user_id):
-    """Return whether the user_id is in the user_table"""
+    """
+    Return whether the user_id is in the user_table
+    """
     unprocessed_query = (
-        f"SELECT * "\
-        f"FROM user_table "\
-        f"WHERE user_id = %s"
+        """
+        SELECT *
+        FROM user_table
+        WHERE user_id = %s
+        """
     )
     query = cursor.mogrify(unprocessed_query, (user_id,))
     cursor.execute(query)
@@ -304,33 +314,45 @@ def check_if_user_id_exists(cursor, user_id):
 # NOTE: FOR ANY COMMAND TO COMMIT DATA TO THE DATABASE, WE MUST
 # PASS THE CONNECTION, NOT THE CURSOR
 def rate(connection, user_id, song_id, rating_value, comment):
-    """Creates or updates a rating on a song"""
+    """
+    Creates or updates a rating on a song
+    """
     cursor = connection.cursor()
     # Case if user has NOT made rating on this song previously
     if not check_if_comment_made(cursor, user_id, song_id):
         unprocessed_query = (
-            f"INSERT INTO rates (user_id, song_id, rating_value, comment) "\
-            f"VALUES (%s, %s, %s, %s) "\
-            f"ON CONFLICT DO NOTHING"
+            """
+            INSERT INTO rates (user_id, song_id, rating_value, comment)
+            VALUES (%s, %s, %s, %s)
+            ON CONFLICT DO NOTHING
+            """
         )
         query = cursor.mogrify(unprocessed_query, (user_id, song_id, rating_value, comment))
     else:
         unprocessed_query = (
-            f"UPDATE rates "\
-            f"SET comment = %s, rating_value = %s "\
-            f"WHERE user_id = %s AND song_id = %s"
+            """
+            UPDATE rates
+            SET comment = %s, rating_value = %s
+            WHERE user_id = %s AND song_id = %s
+            """
         )
         query = cursor.mogrify(unprocessed_query, (comment, rating_value, user_id, song_id))
     cursor.execute(query)
     print("Rate query executed! Committing now!")
     connection.commit()
+    # Update avg_ratings materialized view
+    refresh_avg_ratings(connection)
 
 def check_if_comment_made(cursor, user_id, song_id):
-    """Checks if a user has made a comment on a song"""
+    """
+    Checks if a user has made a comment on a song
+    """
     unprocessed_query = (
-        f"SELECT * "\
-        f"FROM rates "\
-        f"WHERE user_id = %s AND song_id = %s"
+        """
+        SELECT * 
+        FROM rates 
+        WHERE user_id = %s AND song_id = %s
+        """
     )
     query = cursor.mogrify(unprocessed_query, (user_id, song_id))
     cursor.execute(query)
@@ -338,16 +360,15 @@ def check_if_comment_made(cursor, user_id, song_id):
     return bool(results)
 
 def get_average_rating(cursor, song_id):
-    """Find the average rating for a song"""
+    """
+    Find the average rating for a song
+    """
     unprocessed_query = (
-        f"SELECT avg_table.avg_rating "\
-        f"FROM ( "\
-        f"      SELECT song.song_id AS song_id, ROUND(AVG(rates.rating_value),2) AS avg_rating "\
-        f"      FROM song, rates "\
-        f"      WHERE song.song_id = rates.song_id "\
-        f"      GROUP BY song.song_id "\
-        f"     ) AS avg_table "\
-        f"WHERE avg_table.song_id = %s"
+        """
+        SELECT avg_rating
+        FROM avg_ratings
+        WHERE avg_ratings.song_id = %s
+        """
     )
     query = cursor.mogrify(unprocessed_query, (song_id,))
     cursor.execute(query)
@@ -355,16 +376,15 @@ def get_average_rating(cursor, song_id):
     return results[0][0]
 
 def get_total_listens(cursor, song_id):
-    """Find the number of listens for a given song"""
+    """
+    Find the number of listens for a given song
+    """
     unprocessed_query = (
-        f"SELECT count_table.total_listens "\
-        f"FROM ( "\
-        f"      SELECT song.song_id AS song_id, COUNT(listens_to.user_id) AS total_listens "\
-        f"      FROM song, listens_to "\
-        f"      WHERE song.song_id = listens_to.song_id "\
-        f"      GROUP BY song.song_id "\
-        f"     ) AS count_table "\
-        f"WHERE count_table.song_id = %s"
+        """
+        SELECT total_listens.total AS total_listens
+        FROM total_listens
+        WHERE total_listens.song_id = %s
+        """
     )
     query = cursor.mogrify(unprocessed_query, (song_id,))
     cursor.execute(query)
@@ -380,9 +400,12 @@ def execute_query_and_return(cursor, query):
 
 def check_if_listened(cursor, user_id, song_id):
     unprocessed_query = (
-        f"SELECT * "\
-        f"FROM listens_to "\
-        f"WHERE listens_to.user_id = %s AND listens_to.song_id = %s"
+        """
+        SELECT *
+        FROM listens_to
+        WHERE listens_to.user_id = %s
+            AND listens_to.song_id = %s
+        """
     )
     query = cursor.mogrify(unprocessed_query, (user_id, song_id))
     cursor.execute(query)
@@ -395,13 +418,17 @@ def check_if_listened(cursor, user_id, song_id):
 def add_listen(connection, user_id, song_id):
     cursor = connection.cursor()
     unprocessed_query = (
-        f"INSERT INTO listens_to (user_id, song_id) "\
-        f"VALUES (%s, %s) "\
-        f"ON CONFLICT DO NOTHING"
+        """
+        INSERT INTO listens_to (user_id, song_id)
+        VALUES (%s, %s)
+        ON CONFLICT DO NOTHING
+        """
     )
     query = cursor.mogrify(unprocessed_query, (user_id, song_id))
     cursor.execute(query)
     connection.commit()
+    # Refreshes materialized view
+    refresh_total_listens(connection)
 
 # Gets details on if a song is explicit, its length,
 # and the countries in which it is available.
@@ -412,9 +439,11 @@ def add_listen(connection, user_id, song_id):
 #   4. List of countries song is available in
 def get_song_details(cursor, song_id):
     unprocessed_query = (
-        f"SELECT is_explicit, duration, popularity "\
-        f"FROM song "\
-        f"WHERE song_id = %s"
+        """
+        SELECT is_explicit, duration, popularity
+        FROM song
+        WHERE song_id = %s
+        """
     )
     query = cursor.mogrify(unprocessed_query, (song_id,))
     cursor.execute(query)
@@ -424,10 +453,12 @@ def get_song_details(cursor, song_id):
 
 def get_countries(cursor, song_id):
     unprocessed_query = (
-        f"SELECT available_in.country_name AS country_name "\
-        f"FROM song, available_in "\
-        f"WHERE song.song_id = available_in.song_id "\
-        f"  AND song.song_id = %s"
+        """
+        SELECT available_in.country_name AS country_name
+        FROM song
+            INNER JOIN available_in ON song.song_id = available_in.song_id
+        WHERE song.song_id = %s
+        """
     )
     query = cursor.mogrify(unprocessed_query, (song_id,))
     cursor.execute(query)
@@ -475,6 +506,28 @@ def query_type_parser(query_type):
 
 def format_like_query(input_str):
     return '%' + input_str + '%'
+
+def refresh_avg_ratings(connection):
+    cursor = connection.cursor()
+    unprocessed_query = (
+        """
+        REFRESH MATERIALIZED VIEW avg_ratings
+        """
+    )
+    query = cursor.mogrify(unprocessed_query)
+    cursor.execute(query)
+    connection.commit()
+
+def refresh_total_listens(connection):
+    cursor = connection.cursor()
+    unprocessed_query = (
+        """
+        REFRESH MATERIALIZED VIEW total_listens
+        """
+    )
+    query = cursor.mogrify(unprocessed_query)
+    cursor.execute(query)
+    connection.commit()
 
 # Thanks to https://pynative.com/python-generate-random-string/
 # for this code for a random string
