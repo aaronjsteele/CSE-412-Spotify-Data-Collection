@@ -1,7 +1,5 @@
 from website import app
 from flask import render_template, request, g, redirect, make_response
-import os
-import sys
 from website.custom_scripts import *
 
 # NOTE: g is a flask global variable for the current context.
@@ -30,20 +28,33 @@ def main_page():
 
 @app.route("/artist", methods=["GET"])
 def artist_page():
-    artist = request.args.get("artist", "")
-    if not artist:
-        print(f"/songs-by-artist needs to receive an 'artist' parameter (eg. /songs-by-artist?artist=bob)")
+    artist_name = request.args.get("artist_name", None)
+    artist_id = request.args.get("artist_id", None)
+    if not artist_name:
+        print(f"/artist needs to receive an 'artist' parameter (eg. /artist?artist=bob)")
         return error_page()
-    return render_template("artist.html", artist_name=artist)
+    top_tracks = query_db.get_artist_top_tracks(get_db().cursor(), artist_id)
+    genres = query_db.get_artist_genres(get_db().cursor(), artist_id)
+    related_artists = query_db.get_related_artists(get_db().cursor(), artist_id)
+    albums = query_db.get_artist_albums(get_db().cursor(), artist_id)
+    songs_in_album = {}
+    for album in albums:
+        songs_in_album[album['album_id']] = query_db.get_songs_in_album(get_db().cursor(), album['album_id'])
+
+    return render_template("artist.html",
+                            artist_name=artist_name,
+                            artist_id=artist_id,
+                            genres=genres,
+                            top_tracks=top_tracks,
+                            albums=albums,
+                            songs_in_album=songs_in_album,
+                            related_artists=related_artists)
 
 @app.route("/rate", methods=["GET", "POST"])
 def rate_song_page():
     if request.method == "GET":
         user_id = request.cookies.get('user_id')
         username = request.cookies.get('username')
-        if not user_id or not username:
-            print(f"You need to log in before rating any songs")
-            return redirect("/sign-in")
         song_id = request.args.get("song_id", "")
         if not song_id:
             print("/rate needs to receive a song_id parameter (eg. /rate?song=123)")
@@ -51,13 +62,10 @@ def rate_song_page():
         results = query_db.rate_song_page(get_db().cursor(), song_id)
 
         listened_to = request.args.get("listened_to", "")
-        print(listened_to)
         if listened_to == '1':
-            print("entered if")
             # Logic for ADDING the listened_to relationship
             query_db.add_listen(get_db(), user_id, song_id)
 
-        print(results[0].song_name)
         if not results:
             print(f"/rate was unable to find any songs with id '{song_id}'")
             return error_page()
@@ -67,7 +75,7 @@ def rate_song_page():
                                 total_listens=query_db.get_total_listens(get_db().cursor(), song_id),
                                 song=query_db.get_song_info(get_db().cursor(), song_id)[0],
                                 listened_to_song=query_db.check_if_listened(get_db().cursor(), user_id, song_id),
-                                other_details=query_db.get_other_song_details(get_db().cursor(), song_id),
+                                other_details=query_db.get_song_details(get_db().cursor(), song_id),
                                 results=results)
 
     elif request.method == "POST":
@@ -105,7 +113,7 @@ def rate_song_page():
                                 total_listens=query_db.get_total_listens(get_db().cursor(), song_id),
                                 song=query_db.get_song_info(get_db().cursor(), song_id)[0],
                                 listened_to_song=query_db.check_if_listened(get_db().cursor(), user_id, song_id),
-                                other_details=query_db.get_other_song_details(get_db().cursor(), song_id),
+                                other_details=query_db.get_song_details(get_db().cursor(), song_id),
                                 results=results)
     else:
         print(f"/rate received a {request.method} request when it should have received a 'GET' or 'POST' request.")
@@ -115,13 +123,14 @@ def rate_song_page():
 @app.route("/sign-in", methods=["GET", "POST"])
 def log_in():
     if request.method == "GET":
-        return render_template("sign-in.html")
+        return render_template("sign-in.html", redirect=request.referrer)
     else:
         username = request.form['username']
         password = request.form['password']
+        redirect_to = request.form['redirect']
         print("We currently are not actually using password information.")
         user_id = query_db.get_user_id(get_db(), username)
-        page = make_response(redirect("/"))
+        page = make_response(redirect(redirect_to))
         # FUCK
         page.set_cookie('user_id', user_id)
         page.set_cookie('username', username)
@@ -131,8 +140,8 @@ def log_in():
 def log_out():
     """Deletes the cookies storing user info and returns them to the previous page"""
     page = redirect(request.referrer)
-    page.set_cookie('user_id', "")
-    page.set_cookie('username', "")
+    page.set_cookie('user_id', "", 0)
+    page.set_cookie('username', "", 0)
     return page
 
 def error_page():

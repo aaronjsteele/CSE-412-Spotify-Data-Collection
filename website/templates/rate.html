@@ -1,15 +1,16 @@
 {% extends "base.html" %} {% block content %}
-<h1 class="display-3"><i><b>{{song.song_name}}</b></i></h1>
-<h4><b>Artist:</b> {{song.artist_name}}</h4>
-<h4><b>Album:</b> {{song.album_name}}</h4>
-<h4><b>Rating:</b> {{avg_rating}}/10</h4>
-<h4><b>Total Listens:</b> {{total_listens}}</h4>
+<h1>{{song.song_name}}</h1>
+{% set artist_address = "/artist?artist_id=" + song.artist_id.strip() + "&artist_name=" + song.artist_name.strip() %}
+<h4><b>Artist: </b><a href="{{artist_address}}" class="text-muted">{{song.artist_name}}</a></h4>
+<h4><b>Album: </b>{{song.album_name}}</h4>
+<h4><b>Rating: </b>{{avg_rating}}/10</h4>
+<h4><b>Total Listens: </b>{{total_listens}}</h4>
 
 {% if listened_to_song %}
-<button type="button" class="btn btn-secondary active" role="button" disabled>Listened to this song!</button>
-{% else %}
-{% set listened_destination_address = '/rate?song_id=' + song_id + '&listened_to=1' %}
-<a href={{listened_destination_address}} type="button" class="btn btn-outline-secondary" role="button">Listened to this song!</a>
+  <button type="button" class="btn btn-secondary active" role="button" disabled>Listened to this song!</button>
+{% elif request.cookies.get('user_id') %}
+  {% set listened_destination_address = '/rate?song_id=' + song_id + '&listened_to=1' %}
+  <a href={{listened_destination_address}} type="button" class="btn btn-outline-secondary" role="button">Listened to this song!</a>
 {% endif %}
 
 <p>
@@ -28,41 +29,47 @@
   </div>
 </div>
 
-<div class="form-group">&nbsp;</div>
+<br>
 
-<label for="rating_submission" style="font-size: 24px"><b>Leave a Rating as {{request.cookies.get('username')}}:</b></label>
-{% set destination_address = '/rate?song_id=' + song_id %}
-<form method="POST" action={{destination_address}} id="rating_submission">
-  <div class="form-group">
-    <label for="comment_box">Comment:</label>
-    <textarea
-      class="form-control"
-      rows="5"
-      id="comment_box"
-      placeholder="Enter your comment here."
-      name="comment"
-      required
-    ></textarea>
-  </div>
-  <div class="form row">
-    <div class="form-group col-4">
-      <label for="post_rating">Rating:</label>
-      <input
-        type="number"
+{% if request.cookies.get('user_id') %}
+  <label for="rating_submission" style="font-size: 24px"><b>Leave a Rating as {{request.cookies.get('username')}}:</b></label>
+  {% set destination_address = '/rate?song_id=' + song_id %}
+  <form method="POST" action={{destination_address}} id="rating_submission">
+    <div class="form-group">
+      <label for="comment_box">Comment:</label>
+      <textarea
         class="form-control"
-        id="post_rating"
-        min="1"
-        max="10"
-        step="1"
-        placeholder="5"
-        name="rating"
+        rows="5"
+        id="comment_box"
+        placeholder="Enter your comment here."
+        name="comment"
         required
-      />
+      ></textarea>
     </div>
-  </div>
-  <button type="submit" class="btn btn-success">Submit</button>
-  <input type="hidden" name="song_id" value="{{song_id}}">
-</form>
+    <div class="form row">
+      <div class="form-group col-4">
+        <label for="post_rating">Rating:</label>
+        <input
+          type="number"
+          class="form-control"
+          id="post_rating"
+          min="1"
+          max="10"
+          step="1"
+          placeholder="5"
+          name="rating"
+          required
+        />
+      </div>
+    </div>
+    <button type="submit" class="btn btn-success">Submit</button>
+    <input type="hidden" name="song_id" value="{{song_id}}">
+  </form>
+{% else %}
+  <a href="/sign-in">
+    <button class="btn btn-success">Log in to comment and listen</button>
+  </a>
+{% endif %}
 
 <div class="form-group">&nbsp;</div>
 
