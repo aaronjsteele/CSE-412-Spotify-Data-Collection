@@ -11,6 +11,7 @@ import random
 import string
 from faker import Faker
 import config
+import sys
 
 # Thanks to https://pynative.com/python-generate-random-string/
 # for this code for a random string
@@ -32,7 +33,7 @@ cursor=connection.cursor()
 # --------------------------------------------------------
 # First, we want to select all song_id values, so we can
 # choose some.
-cursor.execute("SELECT song_id FROM song")
+cursor.execute("SELECT song.song_id FROM song INNER JOIN performed_by ON song.song_id = performed_by.song_id WHERE performed_by.artist_id = '36QJpDe2go2KgaRleHCDTp'")
 rows = cursor.fetchall()
 song_id_list = []
 for row in rows:
@@ -85,9 +86,12 @@ for _ in range(100):
 # earlier.
 listens_to_list = []
 for el in user_list:
-    songs_listened_to = random.sample(song_id_list, random.randint(10, len(song_id_list) - 10))
+    songs_listened_to = random.sample(song_id_list, random.randint(10, 100))
+    print(len(songs_listened_to))
     for song_id in songs_listened_to:
         listens_to_list.append([el[0], song_id])
+
+print(listens_to_list)
 
 # A similar approach is given to construct the
 # data for the 'rates' table, except additional

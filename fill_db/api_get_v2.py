@@ -1,47 +1,10 @@
 import requests
 import json
 import psycopg2
+import sys
 
 # Config contains the API keys and whatnot
-import fill_db.config as config
-
-# Note that this only handles 'regular' arrays, not some of the nested ones
-# defined in this file.
-#
-# This also does not work with sets
-
-# DO NOT USE THIS!!!!
-# Use the built-in psycopg2 tools instead!
-"""
-def insert_into_SQL_database(cursor, table_name, table_labels, data_array):
-    command = "INSERT INTO " + table_name + " " + table_labels + " VALUES "
-    for i in range(len(data_array)):
-        el = data_array[i]
-        command += '('
-        for j in range(len(el)):
-            command += "\'" + el[j] + "\'"
-            if j != len(el)-1:
-                command += ","
-        command += ")"
-        if i != len(data_array)-1:
-            command += ","
-    command += " ON CONFLICT DO NOTHING;"
-    print(command)
-    cursor.execute(command)
-    cursor.commit()
-    return command
-"""
-
-def insert_into_SQL_database(cursor, table_name, table_labels, data_array):
-    for el in data_array:
-        to_insert = "("
-        for j in range(len(el)):
-            to_insert += "\'" + el[j] + "\'"
-            if j != len(el)-1:
-                to_insert += ","
-        to_insert += ")"
-
-# Credit to https://stmorse.github.io/journal/spotify-api.html for guide on Spotify API access
+import config
 
 AUTH_URL = 'https://accounts.spotify.com/api/token'
 
@@ -92,67 +55,75 @@ participates_in_insert = []
 countries = set()
 in_countries = []
 
-r = requests.get(BASE_URL + 'artists/' + '36QJpDe2go2KgaRleHCDTp' + "/top-tracks", headers = headers, params={'country' : 'US'})
+r = requests.get(BASE_URL + 'artists/' + '36QJpDe2go2KgaRleHCDTp' + '/albums', headers = headers, params={'country' : 'US'})
 d = r.json()
-print(d['tracks'][0]['duration_ms'])
+print(d['items'][0])
+for el in d['items']:
+    print(el)
 
-# Gather data on artists
+# Gather data on artists:
 for a_id in artist_id_list:
+    # Gets information about an artist
     r = requests.get(BASE_URL + 'artists/' + a_id, headers = headers)
     d = r.json()
     artists_to_insert.append([d['name'],a_id])
     genres_to_insert.update(d['genres'])
     is_genre_to_insert.append([d['genres'],a_id])
 
-    # Now, we get the top tracks for an artist and use those as the tracks for our
-    # sample data set. From this we can also get the albums we want
-    r2 = requests.get(BASE_URL + 'artists/' + a_id + "/top-tracks", headers = headers, params={'country' : 'US'})
+    # This section gets the ID's of which songs are the top songs of an artist.
+    # These are used later, when the songs are grabbed.
+    top_track_ids = []
+    r4 = requests.get(BASE_URL + 'artists/' + a_id + '/top-tracks', headers = headers, params={'country' : 'US'})
+    print(r4)
+    d4 = r4.json()
+    for top_song in d4['tracks']:
+        top_song_id = top_song['id']
+        top_track_ids.append(top_song_id)
+
+    # Gets information about the artist's albums. Will get at most 20 albums
+    r2 = requests.get(BASE_URL + 'artists/' + a_id + '/albums', headers = headers, params={'country' : 'US'})
     d2 = r2.json()
-    # First, get data on the song (note that the table has song_id, song_name, is_explicit, popularity, duration)
-    for i in range(10):
-        song_id = d2['tracks'][i]['id']
-        song_name = d2['tracks'][i]['name']
-        song_pop = d2['tracks'][i]['popularity']
-        if d2['tracks'][i]['explicit']:
-            song_explicit = 1
-        else:
-            song_explicit = 0
-        song_duration = d2['tracks'][i]['duration_ms']
-        songs_to_insert.append([song_id,song_name,song_explicit,song_pop,song_duration])
-        print([song_id,song_name,song_explicit,song_pop,song_duration])
-
-        # Now that we have data on a song, we should get which album it's in
-        album_id = d2['tracks'][i]['album']['id']
-        album_name = d2['tracks'][i]['album']['name']
+    # We now want to iterate through all the returned albums
+    for album in d2['items']:
+        album_id = album['id']
+        album_name = album['name']
+        album_group = album['album_group']
         albums_to_insert.append([album_id, album_name])
-        print([album_id, album_name])
+        participates_in_insert.append([album_group, a_id, album_id])
 
-        is_in_album_to_insert.append([song_id, album_id])
-
-        # NOTE: Since for now we're simplifying things by using the top tracks of an
-        # artist to GET the tracks,  the 'is_top_track' is 'random' right now (i odd is 1, i even is 0)
-        performed_by_insert.append([song_id, a_id, i%2])
-        
-        # Now, we get the album from the album_id and pull out the album_group (needed for 
-        # participates relation) and the countries (needed for its table and the relation with
-        # the tracks)
-        r3 = requests.get(BASE_URL + 'albums/' + album_id, headers = headers)
+        # For each returned album, we want to iterate and get the songs.
+        r3 = requests.get(BASE_URL + 'albums/' + album_id + '/tracks', headers = headers, params={'limit' : '50'})
+        print(r3)
         d3 = r3.json()
+        print(d3)
+        for song in d3['items']:
+            song_id = song['id']
+            song_name = song['name']
+            # We need to make an API call to the tracks object to get a song's popularity
+            r5 = requests.get(BASE_URL + 'tracks/' + song_id, headers = headers)
+            d5 = r5.json()
+            song_pop = d5['popularity']
+            if song['explicit']:
+                song_explicit = 1
+            else:
+                song_explicit = 0
+            song_duration = song['duration_ms']
 
-        countries.update(d3['available_markets'])
-        print(d3['available_markets'])
+            if song_id in top_track_ids:
+                is_top_track = 1
+            else:
+                is_top_track = 0
 
-        in_countries.append([d3['available_markets'], song_id])
+            # Adding song information to relevant arrays
+            songs_to_insert.append([song_id, song_name, song_explicit, song_pop, song_duration])
+            is_in_album_to_insert.append([song_id, album_id])
+            performed_by_insert.append([song_id, a_id, is_top_track])
 
-        # For now, participates_in will have dummy data (this method of filling
-        # albums only gets artists who made the albums)
-        participates_in_insert.append(['album', a_id, album_id])
+            # Information on countries
+            countries.update(song['available_markets'])
+            in_countries.append([song['available_markets'], song_id])
 
-for el in genres_to_insert:
-    print(el)
-
-print(albums_to_insert)
-print(is_in_album_to_insert)
+# --------------------------------------------------------------
 # In theory, now we have a boatload of data for everything except our users. We will fill that later.
 # Now, we update the SQL server
 for el in artists_to_insert:
@@ -222,8 +193,10 @@ for el in countries:
 
 print("now working on in_countries")
 
+num_in_countries = len(in_countries)
+i = 0
 for el in in_countries:
-    print(el)
+    print(i + " of " + num_in_countries + "\n" + el)
     for g in el[0]:
         cursor.execute("""
             INSERT INTO available_in (country_name, song_id)
@@ -231,6 +204,7 @@ for el in in_countries:
             """,
             (g, el[1])
         )
+    i += 1
 
 for el in participates_in_insert:
     cursor.execute("""
