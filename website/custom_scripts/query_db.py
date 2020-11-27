@@ -107,59 +107,87 @@ def get_artist_top_tracks(cursor, artist):
     List the top tracks of an artist given the artist id
     """
     unprocessed_query = (
-        f"SELECT song_name AS song, song.song_id "\
-        f"FROM artist, song, performed_by "\
-        f"WHERE song.song_id = performed_by.song_id "\
-        f"    AND performed_by.artist_id = artist.artist_id "\
-        f"    AND is_top_track = true "\
-        f"    AND artist.artist_id = %s"
+        """
+        SELECT
+            song_name AS song,
+            song.song_id
+        FROM artist
+            INNER JOIN performed_by ON performed_by.artist_id = artist.artist_id
+            INNER JOIN song ON song.song_id = performed_by.song_id
+        WHERE is_top_track = true
+            AND artist.artist_id = %s
+        """
     )
     query = cursor.mogrify(unprocessed_query, (artist,))
     return execute_query_and_return(cursor, query)
 
 def get_artist_genres(cursor, artist):
-    """List all the genres associated with an artist given the artist id"""
+    """
+    List all the genres associated with an artist given the artist id
+    """
     unprocessed_query = (
-        f"SELECT genre_name AS genre "\
-        f"FROM artist, is_genre "\
-        f"WHERE is_genre.artist_id = artist.artist_id "\
-        f"    AND artist.artist_id = %s"
+        """
+        SELECT
+            genre_name AS genre
+        FROM artist
+            INNER JOIN is_genre ON is_genre.artist_id = artist.artist_id
+        WHERE artist.artist_id = %s
+        """
     )
     query = cursor.mogrify(unprocessed_query, (artist,))
     return execute_query_and_return(cursor, query)
 
 def get_related_artists(cursor, artist):
-    """List all the related artists given an artist id"""
+    """
+    List all the related artists given an artist id
+    """
     unprocessed_query = (
-        f"SELECT artist_name AS artist, artist_id "\
-        f"FROM artist, related_artists "\
-        f"WHERE %s = artist_id_1 "\
-        f"    AND artist_id = artist_id_2"\
+        """
+        SELECT
+            artist_name AS artist,
+            artist_id
+        FROM artist
+            INNER JOIN related_artists ON artist.artist_id = related_artists.artist_id_2
+        WHERE related_artists.artist_id_1 = %s
+        """
     )
     query = cursor.mogrify(unprocessed_query, (artist,))
     return execute_query_and_return(cursor, query)
 
 def get_artist_albums(cursor, artist):
-    """List all the albums the artist is apart of give an artist id"""
+    """
+    List all the albums the artist is apart of give an artist id
+    """
     unprocessed_query = (
-        f"SELECT album_name AS album, album.album_id AS album_id, album_group "\
-        f"FROM artist, album, participates_in "\
-        f"WHERE artist.artist_id = %s "\
-        f"    AND artist.artist_id = participates_in.artist_id "\
-        f"    AND album.album_id = participates_in.album_id "
-        f"    AND participates_in.album_group = 'album'"
+        """
+        SELECT
+            album.album_name AS album,
+            album.album_id AS album_id,
+            participates_in.album_group
+        FROM artist
+            INNER JOIN participates_in ON artist.artist_id = participates_in.artist_id
+            INNER JOIN album ON album.album_id = participates_in.album_id
+        WHERE artist.artist_id = %s
+            AND participates_in.album_group = 'album'
+        """
     )
     query = cursor.mogrify(unprocessed_query, (artist,))
     return execute_query_and_return(cursor, query)
 
 def get_songs_in_album(cursor, album):
-    """List all songs in an album give an album id"""
+    """
+    List all songs in an album give an album id
+    """
     unprocessed_query = (
-        f"SELECT song_name AS song, song.song_id AS song_id "\
-        f"FROM song, album, is_in "\
-        f"WHERE album.album_id = %s "\
-        f"    AND song.song_id = is_in.song_id "\
-        f"    AND album.album_id = is_in.album_id "
+        """
+        SELECT
+            song.song_name AS song,
+            song.song_id AS song_id
+        FROM song
+            INNER JOIN is_in ON song.song_id = is_in.song_id
+            INNER JOIN album ON album.album_id = is_in.album_id
+        WHERE album.album_id = %s
+        """
     )
     query = cursor.mogrify(unprocessed_query, (album,))
     return execute_query_and_return(cursor, query)
@@ -174,19 +202,38 @@ def rate_song_page(cursor, song_id):
         f"    AND rates.user_id = user_table.user_id "\
         f"    AND song.song_id = %s"
     )
+    unprocessed_query = (
+        """
+        SELECT
+            song.song_name AS song_name,
+            user_table.display_name AS username,
+            rates.comment AS comment,
+            rates.rating_value AS rating
+        FROM song
+            INNER JOIN rates ON song.song_id = rates.song_id
+            INNER JOIN user_table ON rates.user_id = user_table.user_id
+        WHERE song.song_id = %s
+        """
+    )
     query = cursor.mogrify(unprocessed_query, (song_id,))
     return execute_query_and_return(cursor, query)
 
 # Is done, gets song details
 def get_song_info(cursor, song_id):
     unprocessed_query = (
-        f"SELECT song.song_name AS song_name, artist.artist_name AS artist_name, artist.artist_id AS artist_id, album.album_name AS album_name "\
-        f"FROM song, album, artist, is_in, performed_by "\
-        f"WHERE song.song_id = performed_by.song_id "\
-        f"  AND performed_by.artist_id = artist.artist_id "\
-        f"  AND song.song_id = is_in.song_id "\
-        f"  AND is_in.album_id = album.album_id "\
-        f"  AND song.song_id = %s"
+        """
+        SELECT
+            song.song_name AS song_name,
+            artist.artist_name AS artist_name,
+            artist.artist_id AS artist_id,
+            album.album_name AS album_name
+        FROM song
+            INNER JOIN performed_by ON song.song_id = performed_by.song_id
+            INNER JOIN is_in ON song.song_id = is_in.song_id
+            INNER JOIN artist ON performed_by.artist_id = artist.artist_id
+            INNER JOIN album ON is_in.album_id = album.album_id
+        WHERE song.song_id = %s
+        """
     )
     query = cursor.mogrify(unprocessed_query, (song_id,))
     return execute_query_and_return(cursor, query)
