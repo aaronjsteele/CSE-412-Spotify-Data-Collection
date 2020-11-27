@@ -14,49 +14,78 @@ def init_db_connection():
     )
     return connection
 
-def index_query():
-    query = (
-        f"SELECT DISTINCT song_name AS title, artist_name AS artist, album_name AS album, avg_table.avg_rating AS average, count_table.total AS num_listens, song.song_id AS song_id, artist.artist_id AS artist_id, popularity "\
-        f"FROM song, artist, performed_by, album, is_in, is_genre, available_in, "\
-        f"    ( "\
-        f"        SELECT song.song_id, ROUND(AVG(rates.rating_value),2) AS avg_rating "\
-        f"        FROM song, rates "\
-        f"        WHERE song.song_id = rates.song_id "\
-        f"        GROUP BY song.song_id "\
-        f"    ) AS avg_table, "\
-        f"    ( "\
-        f"        SELECT song.song_id, COUNT(*) AS total "\
-        f"        FROM song, listens_to "\
-        f"        WHERE song.song_id = listens_to.song_id "\
-        f"        GROUP BY song.song_id "\
-        f"    ) AS count_table "\
-        f"WHERE song.song_id = performed_by.song_id  "\
-        f"    AND performed_by.artist_id = artist.artist_id  "\
-        f"    AND song.song_id = is_in.song_id  "\
-        f"    AND is_in.album_id = album.album_id  "\
-        f"    AND avg_table.song_id = song.song_id "\
-        f"    AND count_table.song_id = song.song_id "\
-        f"    AND is_genre.artist_id = artist.artist_id "\
-        f"    AND available_in.song_id = song.song_id "
-    )
-    return query
+"""
+DO NOT DELETE!!!
+
+NOTE: A materialized table was created. In theory, we should be able
+to use the materialized views for average rating and the total listens
+on various songs. For reference, the query used to create the materialized
+view for the avg_ratings is:
+
+CREATE MATERIALIZED VIEW avg_ratings AS
+SELECT song.song_id, ROUND(AVG(rates.rating_value),2) AS avg_rating
+FROM song, rates
+WHERE song.song_id = rates.song_id
+GROUP BY song.song_id
+
+This can be accessed like a normal table. This will need to be occasionally
+updated (on new comment or initial connection?) through:
+
+REFRESH MATERIALIZED VIEW avg_ratings
+
+A similar view is created for the total listens to songs:
+
+CREATE MATERIALIZED VIEW total_listens AS
+SELECT song.song_id, COUNT(*) AS total
+FROM song, listens_to
+WHERE song.song_id = listens_to.song_id
+GROUP BY song.song_id
+"""
+
+# This defines the 'standard' search query used in multiple searches on the
+# main page.
+general_search_query = (
+"""
+SELECT DISTINCT
+    song_name AS title,
+    artist_name AS artist,
+    album_name AS album,
+    avg_ratings.avg_rating AS average,
+    total_listens.total AS num_listens,
+    song.song_id AS song_id,
+    artist.artist_id AS artist_id,
+    popularity 
+FROM
+    song
+    INNER JOIN performed_by ON song.song_id = performed_by.song_id
+    INNER JOIN artist ON artist.artist_id = performed_by.artist_id
+    INNER JOIN is_in ON song.song_id = is_in.song_id
+    INNER JOIN album ON album.album_id = is_in.album_id
+    INNER JOIN is_genre ON is_genre.artist_id = artist.artist_id
+    INNER JOIN available_in ON available_in.song_id = song.song_id
+    INNER JOIN avg_ratings ON avg_ratings.song_id = song.song_id
+    INNER JOIN total_listens ON total_listens.song_id = song.song_id
+"""
+)
 
 def list_all(cursor, sort_by_type):
-    """List all songs when search bar is empty
+    """
+    List all songs when search bar is empty
 
     sort_by_type: how to sort the results, must be supported by 'sort_by_parser'
     """
     sort_by_str = sort_by_parser(sort_by_type)
-    query_str = index_query()
     unprocessed_query = (
-        query_str +
+        general_search_query +
         f"ORDER BY {sort_by_str}"
     )
+    print(unprocessed_query)
     query = cursor.mogrify(unprocessed_query)
     return execute_query_and_return(cursor, query)
 
 def search_by(cursor, input_str, query_type, sort_by_type):
-    """Perform a search query
+    """
+    Perform a search query
 
     input_str: is the value to search for
     query_type: is what field to search for, must be supported by 'query_type_parser'
@@ -64,17 +93,19 @@ def search_by(cursor, input_str, query_type, sort_by_type):
     """
     sort_by_str = sort_by_parser(sort_by_type)
     query_type_str = query_type_parser(query_type)
-    query_str = index_query()
     unprocessed_query = (
-        query_str +
-        f"AND {query_type_str} ILIKE %s "\
+        general_search_query +
+        f"WHERE {query_type_str} ILIKE %s\n"
         f"ORDER BY {sort_by_str}"
     )
+    print(unprocessed_query)
     query = cursor.mogrify(unprocessed_query, (format_like_query(input_str),))
     return execute_query_and_return(cursor, query)
 
 def get_artist_top_tracks(cursor, artist):
-    """List the top tracks of an artist given the artist id"""
+    """
+    List the top tracks of an artist given the artist id
+    """
     unprocessed_query = (
         f"SELECT song_name AS song, song.song_id "\
         f"FROM artist, song, performed_by "\
