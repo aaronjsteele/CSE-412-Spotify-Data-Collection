@@ -46,6 +46,7 @@ GROUP BY song.song_id
 # main page.
 general_search_query = (
 """
+SET work_mem TO '1GB';
 SELECT DISTINCT
     song_name AS title,
     artist_name AS artist,
@@ -489,9 +490,9 @@ def sort_by_parser(sort_by_type):
     elif sort_by_type == "popularity":
         string = "popularity DESC"
     elif sort_by_type == "ratings":
-        string = "avg_table.avg_rating DESC"
+        string = "avg_ratings.avg_rating DESC"
     elif sort_by_type == "listens":
-        string = "count_table.total DESC"
+        string = "total_listens.total DESC"
     return string
 
 def query_type_parser(query_type):

@@ -1,0 +1,7 @@
+Created indexes on the server with:
+CREATE INDEX idx_song_song_id ON song (song_id);
+CREATE INDEX idx_artist_artist_id ON artist (artist_id);
+CREATE INDEX idx_album_album_id ON album (album_id);
+CREATE INDEX idx_participates_in_artist_id ON participates_in (artist_id);
+CREATE INDEX idx_is_in_song_id ON is_in (song_id);
+CREATE INDEX idx_performed_by_song_id ON performed_by (song_id);
