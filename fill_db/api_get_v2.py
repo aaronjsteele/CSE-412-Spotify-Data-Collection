@@ -6,6 +6,31 @@ import sys
 # Config contains the API keys and whatnot
 import config
 
+def create_entry_list(cursor, mogrify_string, input_array):
+    string_array = []
+    for x in input_array:
+        string_array.append(cursor.mogrify(mogrify_string, tuple(x)))
+    print(string_array)
+    args_str = b','.join(string_array)
+    print(args_str)
+    return args_str
+
+def create_entry_list_nested(cursor, mogrify_string, input_array):
+    string_array = []
+    for item in input_array:
+        special_el = item[1]
+        for x in item[0]:
+            string_array.append(cursor.mogrify(mogrify_string, (x, special_el)))
+    return b','.join(string_array)
+
+def create_single_entry_list(cursor, mogrify_string, input_array):
+    string_array = []
+    for item in input_array:
+        string_array.append(cursor.mogrify(mogrify_string, (item,)))
+    args_str = b','.join(string_array)
+    print(args_str)
+    return args_str
+
 AUTH_URL = 'https://accounts.spotify.com/api/token'
 
 # POST
@@ -39,7 +64,7 @@ cursor=connection.cursor()
 # Now we have an access token for access
 BASE_URL = 'https://api.spotify.com/v1/'
 
-artist_id_list = ['36QJpDe2go2KgaRleHCDTp']
+artist_id_list = ['3TVXtAsR1Inumwj472S9r4', '1Xyo4u8uXC1ZmMpatF05PJ', '6eUKZXaKkcviH0Ku9w2n3V', '1dfeR4HaWDbWqFHLkxsg1d', '4gzpq5DPGxSnKTe4SA8HAU', '53XhwfbYqKCa1cC15pYq2q']
 
 artists_to_insert = []
 genres_to_insert = set()
@@ -81,7 +106,7 @@ for a_id in artist_id_list:
         top_track_ids.append(top_song_id)
 
     # Gets information about the artist's albums. Will get at most 20 albums
-    r2 = requests.get(BASE_URL + 'artists/' + a_id + '/albums', headers = headers, params={'country' : 'US'})
+    r2 = requests.get(BASE_URL + 'artists/' + a_id + '/albums', headers = headers, params={'country' : 'US', 'limit' : '5'})
     d2 = r2.json()
     # We now want to iterate through all the returned albums
     for album in d2['items']:
@@ -92,7 +117,7 @@ for a_id in artist_id_list:
         participates_in_insert.append([album_group, a_id, album_id])
 
         # For each returned album, we want to iterate and get the songs.
-        r3 = requests.get(BASE_URL + 'albums/' + album_id + '/tracks', headers = headers, params={'limit' : '50'})
+        r3 = requests.get(BASE_URL + 'albums/' + album_id + '/tracks', headers = headers, params={'limit' : '20'})
         print(r3)
         d3 = r3.json()
         print(d3)
@@ -104,15 +129,15 @@ for a_id in artist_id_list:
             d5 = r5.json()
             song_pop = d5['popularity']
             if song['explicit']:
-                song_explicit = 1
+                song_explicit = True
             else:
-                song_explicit = 0
+                song_explicit = False
             song_duration = song['duration_ms']
 
             if song_id in top_track_ids:
-                is_top_track = 1
+                is_top_track = True
             else:
-                is_top_track = 0
+                is_top_track = False
 
             # Adding song information to relevant arrays
             songs_to_insert.append([song_id, song_name, song_explicit, song_pop, song_duration])
@@ -126,93 +151,45 @@ for a_id in artist_id_list:
 # --------------------------------------------------------------
 # In theory, now we have a boatload of data for everything except our users. We will fill that later.
 # Now, we update the SQL server
-for el in artists_to_insert:
-    cursor.execute("""
-        INSERT INTO artist (artist_name, artist_id)
-        VALUES (%s, %s) ON CONFLICT DO NOTHING;
-        """,
-        (el[0], el[1])
-    )
+cursor.execute(b"INSERT INTO artist (artist_name, artist_id)  VALUES"
+                + create_entry_list(cursor, "(%s, %s)", artists_to_insert)
+                + b" ON CONFLICT DO NOTHING;")
 
-for el in genres_to_insert:
-    cursor.execute("""
-        INSERT INTO genre (genre_name)
-        VALUES (%s) ON CONFLICT DO NOTHING;
-        """,
-        (el,)
-    )
+cursor.execute(b"INSERT INTO genre (genre_name) VALUES "
+                + create_single_entry_list(cursor, "(%s)", genres_to_insert)
+                + b" ON CONFLICT DO NOTHING;")
 
-for el in is_genre_to_insert:
-    for g in el[0]:
-        cursor.execute("""
-            INSERT INTO is_genre (genre_name, artist_id)
-            VALUES (%s, %s) ON CONFLICT DO NOTHING;
-            """,
-            (g, el[1])
-        )
+cursor.execute(b"INSERT INTO is_genre (genre_name, artist_id) VALUES "
+                + create_entry_list_nested(cursor, "(%s, %s)", is_genre_to_insert)
+                + b" ON CONFLICT DO NOTHING;")
 
-for el in songs_to_insert:
-    cursor.execute("""
-        INSERT INTO song (song_id, song_name, is_explicit, popularity, duration)
-        VALUES (%s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;
-        """,
-        (el[0], el[1], bool(el[2]), el[3], el[4])
-    )
+cursor.execute(b"INSERT INTO song (song_id, song_name, is_explicit, popularity, duration) VALUES "
+                + create_entry_list(cursor, "(%s, %s, %s, %s, %s)", songs_to_insert)
+                + b" ON CONFLICT DO NOTHING;")
 
-for el in albums_to_insert:
-    cursor.execute("""
-        INSERT INTO album (album_id, album_name)
-        VALUES (%s, %s) ON CONFLICT DO NOTHING;
-        """,
-        (el[0], el[1])
-    )
+cursor.execute(b"INSERT INTO album (album_id, album_name) VALUES "
+                + create_entry_list(cursor, "(%s, %s)", albums_to_insert)
+                + b" ON CONFLICT DO NOTHING;")
 
-for el in is_in_album_to_insert:
-    cursor.execute("""
-        INSERT INTO is_in (song_id, album_id)
-        VALUES (%s, %s) ON CONFLICT DO NOTHING;
-        """,
-        (el[0], el[1])
-    )
+cursor.execute(b"INSERT INTO is_in (song_id, album_id) VALUES "
+                + create_entry_list(cursor, "(%s, %s)", is_in_album_to_insert)
+                + b" ON CONFLICT DO NOTHING;")
 
-for el in performed_by_insert:
-    cursor.execute("""
-        INSERT INTO performed_by (song_id, artist_id, is_top_track)
-        VALUES (%s, %s, %s) ON CONFLICT DO NOTHING;
-        """,
-        (el[0], el[1], bool(el[2]))
-    )
+cursor.execute(b"INSERT INTO performed_by (song_id, artist_id, is_top_track) VALUES "
+                + create_entry_list(cursor, "(%s, %s, %s)", performed_by_insert)
+                + b" ON CONFLICT DO NOTHING;")
 
-for el in countries:
-    cursor.execute("""
-        INSERT INTO countries (country_name)
-        VALUES (%s) ON CONFLICT DO NOTHING;
-        """,
-        (el,)
-    )
+cursor.execute(b"INSERT INTO countries (country_name) VALUES "
+                + create_single_entry_list(cursor, "(%s)", countries)
+                + b" ON CONFLICT DO NOTHING;")
 
-print("now working on in_countries")
+cursor.execute(b"INSERT INTO available_in (country_name, song_id) VALUES "
+                + create_entry_list_nested(cursor, "(%s, %s)", in_countries)
+                + b" ON CONFLICT DO NOTHING;")
 
-num_in_countries = len(in_countries)
-i = 0
-for el in in_countries:
-    print(i + " of " + num_in_countries + "\n" + el)
-    for g in el[0]:
-        cursor.execute("""
-            INSERT INTO available_in (country_name, song_id)
-            VALUES (%s, %s) ON CONFLICT DO NOTHING;
-            """,
-            (g, el[1])
-        )
-    i += 1
-
-for el in participates_in_insert:
-    cursor.execute("""
-        INSERT INTO participates_in (album_group, artist_id, album_id)
-        VALUES (%s, %s, %s) ON CONFLICT DO NOTHING;
-        """,
-        (el[0], el[1], el[2])
-    )
+cursor.execute(b"INSERT INTO participates_in (album_group, artist_id, album_id) VALUES "
+                + create_entry_list(cursor, "(%s, %s, %s)", participates_in_insert)
+                + b" ON CONFLICT DO NOTHING;")
 
 connection.commit()
 
