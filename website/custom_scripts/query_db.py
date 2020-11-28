@@ -1,6 +1,7 @@
 import psycopg2
 import random
 import string
+from copy import deepcopy as copy
 
 def init_db_connection():
     """Initiates connection to DB server, returns a connection"""
@@ -42,46 +43,57 @@ WHERE song.song_id = listens_to.song_id
 GROUP BY song.song_id
 """
 
+def to_string_query(SELECT=[], FROM=[], WHERE=[], ORDER_BY=[]):
+    """Combines lists into one large query
+
+    This function makes it much easier to add an extra select or from into an existing query
+    """
+    query = "SET work_mem to '1GB';\n"
+    query += "SELECT DISTINCT\n\t" + ",\n\t".join(SELECT)
+    query += "\nFROM\n\t"
+    query += "\n\tINNER JOIN ".join(FROM)
+    if WHERE:
+        query += "\nWHERE\n\t" + ",\n\t".join(WHERE)
+    if ORDER_BY:
+        query += "\nORDER BY\n\t" + ",\n\t".join(ORDER_BY)
+    return query
+
 # This defines the 'standard' search query used in multiple searches on the
 # main page.
-general_search_query = (
-"""
-SET work_mem TO '1GB';
-SELECT DISTINCT
-    song_name AS title,
-    artist_name AS artist,
-    album_name AS album,
-    avg_ratings.avg_rating AS average,
-    total_listens.total AS num_listens,
-    song.song_id AS song_id,
-    artist.artist_id AS artist_id,
-    popularity 
-FROM
-    song
-    INNER JOIN performed_by ON song.song_id = performed_by.song_id
-    INNER JOIN artist ON artist.artist_id = performed_by.artist_id
-    INNER JOIN is_in ON song.song_id = is_in.song_id
-    INNER JOIN album ON album.album_id = is_in.album_id
-    INNER JOIN is_genre ON is_genre.artist_id = artist.artist_id
-    INNER JOIN available_in ON available_in.song_id = song.song_id
-    INNER JOIN avg_ratings ON avg_ratings.song_id = song.song_id
-    INNER JOIN total_listens ON total_listens.song_id = song.song_id
-"""
-)
+general_search_query = {
+    'SELECT': [
+        'song_name as title',
+        'artist_name as artist',
+        'album_name as album',
+        'avg_ratings.avg_rating as average',
+        'total_listens.total as num_listens',
+        'song.song_id as song_id',
+        'artist.artist_id as artist_id',
+        'popularity',
+    ],
+    'FROM': [
+        'song',
+        'performed_by on song.song_id = performed_by.song_id',
+        'artist on artist.artist_id = performed_by.artist_id',
+        'is_in on song.song_id = is_in.song_id',
+        'album on album.album_id = is_in.album_id',
+        'avg_ratings on avg_ratings.song_id = song.song_id',
+        'total_listens on total_listens.song_id = song.song_id',
+    ],
+    'WHERE': [],
+    'ORDER_BY': [],
+}
 
 def list_all(cursor, sort_by_type):
     """
     List all songs when search bar is empty
 
-    sort_by_type: how to sort the results, must be supported by 'sort_by_parser'
+    sort_by_type: how to sort the results, must be supported by 'add_sort_by'
     """
-    sort_by_str = sort_by_parser(sort_by_type)
-    unprocessed_query = (
-        general_search_query +
-        f"ORDER BY {sort_by_str}"
-    )
-    print(unprocessed_query)
-    query = cursor.mogrify(unprocessed_query)
+    query = copy(general_search_query)
+    query = add_sort_by(query, sort_by_type) # Add 'ORDER BY' clause
+    query = to_string_query(**query)
+    query = cursor.mogrify(query)
     return execute_query_and_return(cursor, query)
 
 def search_by(cursor, input_str, query_type, sort_by_type):
@@ -89,18 +101,14 @@ def search_by(cursor, input_str, query_type, sort_by_type):
     Perform a search query
 
     input_str: is the value to search for
-    query_type: is what field to search for, must be supported by 'query_type_parser'
-    sort_by_type: is what field to order by, must be supported by 'sort_by_parser'
+    query_type: is what field to search for, must be supported by 'add_filter_by'
+    sort_by_type: is what field to order by, must be supported by 'add_sort_by'
     """
-    sort_by_str = sort_by_parser(sort_by_type)
-    query_type_str = query_type_parser(query_type)
-    unprocessed_query = (
-        general_search_query +
-        f"WHERE {query_type_str} ILIKE %s\n"
-        f"ORDER BY {sort_by_str}"
-    )
-    print(unprocessed_query)
-    query = cursor.mogrify(unprocessed_query, (format_like_query(input_str),))
+    query = copy(general_search_query)
+    query = add_sort_by(query, sort_by_type) # Add 'ORDER BY' clause
+    query = add_filter_by(query, query_type) # Add 'WHERE' clause and any necessary 'FROM's
+    query = to_string_query(**query)
+    query = cursor.mogrify(query, (format_like_query(input_str),))
     return execute_query_and_return(cursor, query)
 
 def get_artist_top_tracks(cursor, artist):
@@ -350,8 +358,8 @@ def check_if_comment_made(cursor, user_id, song_id):
     """
     unprocessed_query = (
         """
-        SELECT * 
-        FROM rates 
+        SELECT *
+        FROM rates
         WHERE user_id = %s AND song_id = %s
         """
     )
@@ -479,31 +487,37 @@ def convert_to_time(millis):
     minutes = int(minutes)
     return ("%d:%d" % (minutes, seconds))
 
-def sort_by_parser(sort_by_type):
-    string = ""
-    if sort_by_type == "title":
-        string = "song_name"
-    elif sort_by_type == "artist":
-        string = "artist_name"
-    elif sort_by_type == "album":
-        string = "album_name"
-    elif sort_by_type == "popularity":
-        string = "popularity DESC"
-    elif sort_by_type == "ratings":
-        string = "avg_ratings.avg_rating DESC"
-    elif sort_by_type == "listens":
-        string = "total_listens.total DESC"
-    return string
+def add_sort_by(query, type):
+    query = copy(query)
+    if type == "title":
+        query["ORDER_BY"].append("song_name")
+    elif type == "artist":
+        query["ORDER_BY"].append("artist_name")
+    elif type == "album":
+        query["ORDER_BY"].append("album_name")
+    elif type == "popularity":
+        query["ORDER_BY"].append("popularity DESC")
+    elif type == "ratings":
+        query["ORDER_BY"].append("avg_ratings.avg_rating DESC")
+    elif type == "listens":
+        query["ORDER_BY"].append("total_listens.total DESC")
+    else:
+        raise Exception(f"add_sort_by expected '{type}' to be one of title, artist, album, popularity, ratings, or listens")
+    return query
 
-def query_type_parser(query_type):
-    string = ""
-    if query_type in {"artist", "song", "album"}:
-        string = f"{query_type}.{query_type}_name"
-    elif query_type == "genre":
-        string = f"is_genre.genre_name"
-    elif query_type == "country":
-        string = f"available_in.country_name"
-    return string
+def add_filter_by(query, field):
+    query = copy(query)
+    if field in {"artist", "song", "album"}:
+        query["WHERE"].append(f"{field}.{field}_name ILIKE %s")
+    elif field == "genre":
+        query["FROM"].append("is_genre on is_genre.artist_id = artist.artist_id")
+        query["WHERE"].append("is_genre.genre_name ILIKE %s")
+    elif field == "country":
+        query["FROM"].append("available_in ON available_in.song_id = song.song_id")
+        query["WHERE"].append("available_in.country_name ILIKE %s")
+    else:
+        raise Exception(f"add_filter_by expected '{field}' to be one of artist, song, album, genre, or country")
+    return query
 
 def format_like_query(input_str):
     return '%' + input_str + '%'
