@@ -3,7 +3,7 @@ import json
 import psycopg2
 
 # Config contains the API keys and whatnot
-import config
+import fill_db.config as config
 
 # Note that this only handles 'regular' arrays, not some of the nested ones
 # defined in this file.

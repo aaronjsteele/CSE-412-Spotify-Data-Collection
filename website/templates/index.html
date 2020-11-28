@@ -6,22 +6,24 @@
 <div class="list-group">
     <li class="list-group-item list-group-item-success">
         <div class="row">
-            <div class="col-4">TITLE</div>
+            <div class="col-3">TITLE</div>
             <div class="col-2">ARTIST</div>
             <div class="col-4">ALBUM</div>
             <div class="col">RATING</div>
             <div class="col">LISTENS</div>
+            <div class="col">POPULARITY</div>
         </div>
     </li>
     {% for song in songs %} {% set call_string = 'redirect_song(\"' ~ song.song_id.strip() ~ '\")' %}
     <button type="button" class="list-group-item list-group-item-action" onclick="{{call_string}}">
         <div class="row">
-            <div class="col-4 text-truncate"><b>{{song.title}}</b></div>
+            <div class="col-3 text-truncate"><b>{{song.title}}</b></div>
             {% set artist_address = "/artist?artist_id=" + song.artist_id.strip() + "&artist_name=" + song.artist.strip() %}
             <div class="col-2"><b><a href="{{artist_address}}" class="text-muted">{{song.artist}}</a></b></div>
-            <div class="col-4 text-truncate"><b>{{song.album}}</b></div>
-            <div class="col text-center"><b>{{song.average}}</b></div>
+            <div class="col-3 text-truncate"><b>{{song.album}}</b></div>
+            <div class="col-1 text-center"><b>{{song.average}}</b></div>
             <div class="col text-center"><b>{{song.num_listens}}</b></div>
+            <div class="col text-center"><b>{{song.popularity}}</b></div>
         </div>
     </button>
     {% endfor %}

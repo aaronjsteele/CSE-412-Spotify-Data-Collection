@@ -11,6 +11,17 @@ import random
 import string
 from faker import Faker
 import config
+import sys
+from datetime import datetime
+
+def create_entry_list(cursor, mogrify_string, input_array):
+    string_array = []
+    for x in input_array:
+        string_array.append(cursor.mogrify(mogrify_string, tuple(x)))
+    print(string_array)
+    args_str = b','.join(string_array)
+    print(args_str)
+    return args_str
 
 # Thanks to https://pynative.com/python-generate-random-string/
 # for this code for a random string
@@ -32,11 +43,13 @@ cursor=connection.cursor()
 # --------------------------------------------------------
 # First, we want to select all song_id values, so we can
 # choose some.
-cursor.execute("SELECT song_id FROM song")
+cursor.execute("SELECT song.song_id FROM song INNER JOIN performed_by ON song.song_id = performed_by.song_id WHERE performed_by.artist_id = '3TVXtAsR1Inumwj472S9r4'")
 rows = cursor.fetchall()
 song_id_list = []
 for row in rows:
     song_id_list.append(row[0].strip())
+
+print(song_id_list)
 
 # For artist relationships, we create all tuples that
 # are not artists related to themselves. We will then
@@ -70,11 +83,11 @@ for row in rows:
 # Now, let's generate some fake users to enter into our
 # database.
 fake = Faker()
-Faker.seed(1337)
-random.seed(10000)
+Faker.seed(datetime.now())
+random.seed(datetime.now())
 
 user_list = []
-for _ in range(100):
+for _ in range(300):
     user_id = get_random_alphanumeric_string(21)
     username = fake.simple_profile()['username']
     user_list.append([user_id, username])
@@ -85,9 +98,12 @@ for _ in range(100):
 # earlier.
 listens_to_list = []
 for el in user_list:
-    songs_listened_to = random.sample(song_id_list, random.randint(10, len(song_id_list) - 10))
+    songs_listened_to = random.sample(song_id_list, random.randint(30, len(song_id_list) - 10))
+    print(len(songs_listened_to))
     for song_id in songs_listened_to:
         listens_to_list.append([el[0], song_id])
+
+print(listens_to_list)
 
 # A similar approach is given to construct the
 # data for the 'rates' table, except additional
@@ -95,13 +111,13 @@ for el in user_list:
 # from 1 to 10) and a comment
 rates_list = []
 for el in user_list:
-    songs_rated = random.sample(song_id_list, random.randint(10, 30))
+    songs_rated = random.sample(song_id_list, random.randint(10, 50))
     for song_id in songs_rated:
         rates_list.append([el[0], song_id, random.randint(1,10), fake.sentence()])
 
 # Selects a random amount of artists to be related
 # to each other.
-related_to_list = random.sample(artist_id_list, random.randint(30, 50))
+related_to_list = random.sample(artist_id_list, random.randint(3, 9))
 
 # Finally, we add some random elements to the
 # participates_in relationship with an album_group
@@ -115,54 +131,29 @@ for row in temp:
 # Finally, we add our data to the Database
 
 print("Now adding elements to \'user_table\'")
-for el in user_list:
-    print("adding ", el)
-    cursor.execute("""
-        INSERT INTO user_table (user_id, display_name)
-        VALUES (%s, %s) ON CONFLICT DO NOTHING;
-        """,
-        (el[0], el[1])
-    )
+cursor.execute(b"INSERT INTO user_table (user_id, display_name) VALUES "
+                + create_entry_list(cursor, "(%s, %s)", user_list)
+                + b" ON CONFLICT DO NOTHING;")
 
 print("Now adding elements to \'listens_to\'")
-for el in listens_to_list:
-    print("adding ", el)
-    cursor.execute("""
-        INSERT INTO listens_to (user_id, song_id)
-        VALUES (%s, %s) ON CONFLICT DO NOTHING;
-        """,
-        (el[0], el[1])
-    )
+cursor.execute(b"INSERT INTO listens_to (user_id, song_id) VALUES "
+                + create_entry_list(cursor, "(%s, %s)", listens_to_list)
+                + b" ON CONFLICT DO NOTHING;")
 
 print("Now adding elements to \'rates\'")
-for el in rates_list:
-    print("adding ", el)
-    cursor.execute("""
-        INSERT INTO rates (user_id, song_id, rating_value, comment)
-        VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING;
-        """,
-        (el[0], el[1], el[2], el[3])
-    )
+cursor.execute(b"INSERT INTO rates (user_id, song_id, rating_value, comment) VALUES "
+                + create_entry_list(cursor, "(%s, %s, %s, %s)", rates_list)
+                + b" ON CONFLICT DO NOTHING;")
 
 print("Now adding elements to \'related_artists\'")
-for el in related_to_list:
-    print("adding ", el)
-    cursor.execute("""
-        INSERT INTO related_artists (artist_id_1, artist_id_2)
-        VALUES (%s, %s) ON CONFLICT DO NOTHING;
-        """,
-        (el[0], el[1])
-    )
+cursor.execute(b"INSERT INTO related_artists (artist_id_1, artist_id_2) VALUES "
+                + create_entry_list(cursor, "(%s, %s)", related_to_list)
+                + b" ON CONFLICT DO NOTHING;")
 
 print("Now adding elements to \'participates_in\'")
-for el in participates_in_to_add:
-    print("adding ", el)
-    cursor.execute("""
-        INSERT INTO participates_in (album_group, artist_id, album_id)
-        VALUES (%s, %s, %s) ON CONFLICT DO NOTHING;
-        """,
-        (el[0], el[1], el[2])
-    )
+cursor.execute(b"INSERT INTO participates_in (album_group, artist_id, album_id) VALUES "
+                + create_entry_list(cursor, "(%s, %s, %s)", participates_in_to_add)
+                + b" ON CONFLICT DO NOTHING;")
 
 connection.commit()
 
