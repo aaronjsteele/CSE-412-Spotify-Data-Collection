@@ -32,4 +32,6 @@ The only two files of any importance in this repository at the moment are `api_g
 
 If you would like to run the website locally, navigate so that you are in the `website` directory and make sure that a `config.py` file is placed inside, as described above. To run the server, first set the environment variable `FLASK_APP` to `__init__.py`. How you do this will vary depending on if you are using Windows or Linux, but once this is set you can type `flask run` in the console to launch the website locally on port `5000`. Assuming you have installed all necessary packages and are running a modern version of Python, the website is yours to run!
 
+For data to fill a locally-hosted version of the database, please look in the `db_dump` folder of the project, which contains the exported data of all tables in our project. To download a zip of the data, please visit this [link](https://drive.google.com/file/d/1pl704g8YnwuMO9Vvh2_Dyj4G0Hfjaq_j/view?usp=sharing).
+
 If you are having issues getting the website to run, please contact the group responsible for this project.
