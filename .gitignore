@@ -18,3 +18,4 @@ website/config.py
 .idea/
 *.iml
 *.iws
+*.zip
